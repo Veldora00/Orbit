@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbit — Flagship phones, on your terms</title>
+<style>
+  :root{
+    --ink:#10161F;
+    --ink-soft:#1B2431;
+    --paper:#F4F2EC;
+    --amber:#D98E3F;
+    --teal:#3F8F82;
+    --line: rgba(244,242,236,0.14);
+    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;}
+  .wrap{max-width:1160px; margin:0 auto; padding:0 28px;}
+  @media (max-width:640px){ .wrap{padding:0 20px;} }
+
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(16,22,31,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  nav .row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 0;
+  }
+  .brand{ font-family:var(--serif); font-size:22px; letter-spacing:0.2px; font-weight:700; text-decoration:none; }
+  .brand span{color:var(--amber);}
+  .navlinks{display:flex; gap:32px; font-size:15px;}
+  .navlinks a{text-decoration:none; opacity:0.85;}
+  .navlinks a:hover{opacity:1;}
+  .navcta{
+    background:var(--amber); color:var(--ink); padding:10px 20px;
+    border-radius:2px; font-size:14px; font-weight:600; text-decoration:none;
+    border:1px solid var(--amber);
+  }
+  @media (max-width:760px){ .navlinks{display:none;} }
+
+  header.hero{ padding:100px 0 90px; border-bottom:1px solid var(--line); position:relative; }
+  .hero-grid{ display:grid; grid-template-columns: 1.15fr 0.85fr; gap:60px; align-items:end; }
+  @media (max-width:900px){ .hero-grid{grid-template-columns:1fr;} }
+  h1.headline{
+    font-family:var(--serif); font-weight:400; font-size:clamp(38px, 5.4vw, 64px);
+    line-height:1.06; margin:0 0 26px; max-width:15ch;
+  }
+  .headline em{font-style:italic; color:var(--amber);}
+  .hero-sub{ font-size:18px; max-width:46ch; opacity:0.82; margin:0 0 34px; }
+  .hero-ctas{display:flex; gap:16px; flex-wrap:wrap;}
+  .btn-primary{
+    background:var(--amber); color:var(--ink); padding:14px 26px;
+    border-radius:2px; text-decoration:none; font-weight:600; font-size:15px;
+    border:1px solid var(--amber);
+  }
+  .btn-ghost{
+    padding:14px 26px; border-radius:2px; text-decoration:none; font-weight:600;
+    font-size:15px; border:1px solid var(--line); color:var(--paper);
+  }
+  .hero-stat-box{ border:1px solid var(--line); padding:28px; background:var(--ink-soft); }
+  .hero-stat-box .num{ font-family:var(--serif); font-size:52px; color:var(--amber); line-height:1; }
+  .hero-stat-box .cap{font-size:14px; opacity:0.75; margin-top:10px; max-width:28ch;}
+  .hero-stat-box .divider{height:1px; background:var(--line); margin:22px 0;}
+  .hero-stat-row{display:flex; justify-content:space-between; font-size:13px; opacity:0.75; padding:6px 0;}
+  .hero-stat-row b{color:var(--paper); opacity:1; font-weight:600;}
+
+  section.how{padding:90px 0; border-bottom:1px solid var(--line);}
+  .section-label{ font-size:13px; letter-spacing:0.5px; color:var(--teal); margin:0 0 14px; font-weight:600; }
+  h2{ font-family:var(--serif); font-weight:400; font-size:clamp(28px,3.4vw,40px); margin:0 0 46px; max-width:22ch; }
+  .steps{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:1px solid var(--line); }
+  @media (max-width:900px){ .steps{grid-template-columns:1fr 1fr;} }
+  @media (max-width:560px){ .steps{grid-template-columns:1fr;} }
+  .step{ padding:28px 24px 28px 0; border-right:1px solid var(--line); }
+  .steps > .step:last-child{border-right:none;}
+  .step .idx{ font-family:var(--serif); font-size:15px; color:var(--amber); margin-bottom:16px; }
+  .step h3{font-size:17px; margin:0 0 10px; font-weight:600;}
+  .step p{font-size:14.5px; opacity:0.75; margin:0;}
+
+  section.featured{padding:90px 0; border-bottom:1px solid var(--line); background:var(--ink-soft);}
+  .device-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); }
+  @media (max-width:860px){ .device-grid{grid-template-columns:repeat(2,1fr);} }
+  .device-tile{
+    background:var(--ink); padding:26px 22px; text-decoration:none; color:var(--paper);
+    display:block; cursor:pointer;
+  }
+  .device-tile img{ width:100%; height:140px; object-fit:contain; margin-bottom:16px; }
+  .device-tile .dn{ font-size:15px; font-weight:600; margin-bottom:4px; }
+  .device-tile .dp{ font-size:13px; opacity:0.6; }
+
+  section.trust{padding:90px 0; border-bottom:1px solid var(--line);}
+  .trust-grid{display:grid; grid-template-columns:1fr 1fr; gap:60px;}
+  @media (max-width:860px){ .trust-grid{grid-template-columns:1fr;} }
+  .trust-grid p{font-size:16px; opacity:0.8; max-width:52ch;}
+  .trust-list{list-style:none; padding:0; margin:20px 0 0;}
+  .trust-list li{ padding:16px 0; border-top:1px solid var(--line); font-size:15px; opacity:0.85; }
+  .trust-list li b{color:var(--amber); display:block; font-size:14px; margin-bottom:4px; font-weight:600;}
+
+  section.faq{padding:90px 0; border-bottom:1px solid var(--line); background:var(--ink-soft);}
+  .faq-list{max-width:760px;}
+  details{ border-top:1px solid var(--line); padding:20px 0; }
+  details:last-child{border-bottom:1px solid var(--line);}
+  summary{ cursor:pointer; font-size:16.5px; font-weight:600; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+  summary::-webkit-details-marker{display:none;}
+  summary::after{ content:"+"; font-family:var(--serif); font-size:22px; color:var(--amber); margin-left:20px; flex-shrink:0; }
+  details[open] summary::after{content:"–";}
+  details p{font-size:15px; opacity:0.78; margin:14px 0 4px; max-width:64ch; line-height:1.65;}
+
+  footer{padding:80px 0 50px;}
+  .terms-box{ border:1px solid var(--line); padding:36px; margin-bottom:60px; }
+  .terms-box h3{font-family:var(--serif); font-weight:400; font-size:22px; margin:0 0 18px;}
+  .terms-box ol{padding-left:20px; font-size:14px; opacity:0.78; line-height:1.8;}
+  .terms-box li{margin-bottom:10px;}
+  .foot-bottom{
+    display:flex; justify-content:space-between; align-items:center;
+    padding-top:36px; border-top:1px solid var(--line); font-size:13px; opacity:0.55; flex-wrap:wrap; gap:16px;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap row">
+    <a href="index.html" class="brand">orb<span>i</span>t</a>
+    <div class="navlinks">
+      <a href="#how">How it works</a>
+      <a href="product.html">Devices</a>
+      <a href="#faq">FAQ</a>
+      <a href="#terms">Terms</a>
+    </div>
+    <a href="product.html" class="navcta">Get started</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1 class="headline">Carry the latest phone. <em>Never own the debt.</em></h1>
+      <p class="hero-sub">Orbit gets you a brand-new iPhone on a fixed monthly plan — no upfront cost, no bank loan, and nothing left owing when your term ends. Hand it back, or start again on the newest model.</p>
+      <div class="hero-ctas">
+        <a href="product.html" class="btn-primary">See your monthly price</a>
+        <a href="#how" class="btn-ghost">How it works</a>
+      </div>
+    </div>
+    <div class="hero-stat-box">
+      <div class="num">$0</div>
+      <div class="cap">Upfront cost to start a plan — you pay monthly, from day one.</div>
+      <div class="divider"></div>
+      <div class="hero-stat-row"><span>Approval decision</span><b>Same day</b></div>
+      <div class="hero-stat-row"><span>Contract type</span><b>Fixed term</b></div>
+      <div class="hero-stat-row"><span>Ownership required</span><b>None</b></div>
+    </div>
+  </div>
+</header>
+
+<section class="how" id="how">
+  <div class="wrap">
+    <p class="section-label">HOW IT WORKS</p>
+    <h2>Four steps, and the phone's on its way.</h2>
+    <div class="steps">
+      <div class="step"><div class="idx">01</div><h3>Pick a device</h3><p>Choose an iPhone, storage size, and colour.</p></div>
+      <div class="step"><div class="idx">02</div><h3>Verify your identity</h3><p>A quick ID check — usually done in under two minutes.</p></div>
+      <div class="step"><div class="idx">03</div><h3>Pick a term</h3><p>12, 24 or 36 months. Longer terms bring your monthly price down.</p></div>
+      <div class="step"><div class="idx">04</div><h3>It arrives, you pay monthly</h3><p>Free delivery. At term's end, return it, extend, or move to the newest model.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="featured">
+  <div class="wrap">
+    <p class="section-label">POPULAR RIGHT NOW</p>
+    <h2>Every plan priced under its retail value.</h2>
+    <div class="device-grid" id="featured-grid"></div>
+  </div>
+</section>
+
+<section class="trust">
+  <div class="wrap trust-grid">
+    <div>
+      <p class="section-label">THE MODEL</p>
+      <h2 style="margin-bottom:20px;">Why this can cost less than financing one outright.</h2>
+      <p>You're paying for the use of the phone, not buying it. Because Orbit stays the owner, and because every plan is priced at or below the phone's retail price, there's no interest, no finance contract, and nothing owing if you hand it back on time.</p>
+    </div>
+    <ul class="trust-list">
+      <li><b>No purchase option</b>The device is always returned at term's end — that's what keeps every plan a straightforward rental, not a loan.</li>
+      <li><b>Capped exit fee</b>Need out early? The early-exit charge is fixed and disclosed upfront — never the full remaining balance.</li>
+      <li><b>Condition-based Damage Cover</b>Everyday wear is expected. Cover kicks in for accidental damage so a cracked screen doesn't become a large bill.</li>
+      <li><b>Refurbished, not landfilled</b>Returned phones are inspected, refurbished, and given a second lease — which is exactly why the pricing works.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="faq" id="faq">
+  <div class="wrap">
+    <p class="section-label">QUESTIONS</p>
+    <h2>Straight answers before you commit.</h2>
+    <div class="faq-list">
+      <details open>
+        <summary>Do I own the phone at the end of my plan?</summary>
+        <p>No — Orbit remains the owner of the device for the life of the plan. At the end of your term you return it, renew for another term, or upgrade to the newest model. There's no buy-out option, and that's intentional: it's what keeps every plan priced simply, with nothing owing at the end.</p>
+      </details>
+      <details>
+        <summary>Will this affect my credit file?</summary>
+        <p>Approving your plan involves an identity and credit check, which may be recorded on your credit file. This sets the monthly plan amount you're approved for. Meeting our minimum requirements doesn't guarantee approval — every application is assessed individually.</p>
+      </details>
+      <details>
+        <summary>What happens if I want to leave early?</summary>
+        <p>You can end your plan before term's end by paying a fixed early-exit charge, shown to you before you sign up — never the sum of every remaining payment. The exact amount depends on how far into your term you are and is set out in your plan agreement.</p>
+      </details>
+      <details>
+        <summary>What if I don't return the phone?</summary>
+        <p>If a device isn't returned at term's end and we can't reach an agreement to extend or resolve it, a Non-Return Fee applies, reflecting the device's value at that point less what you've already paid. We'll always contact you before this happens — it's a last resort, not a first step.</p>
+      </details>
+      <details>
+        <summary>What if I damage it?</summary>
+        <p>Accidents happen — that's what Damage Cover is for. It's included on every 24- and 36-month plan and available as an add-on for 12-month plans, and it substantially reduces what you'd otherwise pay for accidental screen or body damage. Ordinary wear from daily use is never charged.</p>
+      </details>
+      <details>
+        <summary>Is this the same as buying on a payment plan?</summary>
+        <p>No. A payment plan is financing a purchase — you own the phone once it's paid off, and the balance you owe is a debt. With Orbit, you never own the device, your total payments are capped at or below its retail price, and there's no debt sitting on the phone after you return it.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer id="terms">
+  <div class="wrap">
+    <div class="terms-box">
+      <h3>Plan terms, in plain language</h3>
+      <ol>
+        <li>Your plan runs for a fixed term (12, 24, or 36 months) that you choose at sign-up. Orbit remains the legal owner of the device for the entire term.</li>
+        <li>Total payments across the term are set at or below the device's retail cash price at the time you sign up. No interest is charged.</li>
+        <li>Approval requires an identity check and a credit and affordability check, which may be recorded with a credit reporting body and used to set your approved monthly plan amount.</li>
+        <li>You may end your plan early by paying the early-exit charge disclosed in your plan agreement — a fixed amount, not the sum of remaining payments.</li>
+        <li>At the end of your term, return the device in good working condition within the return window stated in your agreement, extend your plan, or start a new plan on a new device.</li>
+        <li>A Non-Return Fee applies if the device isn't returned and no alternative arrangement is agreed, calculated using the device's value at that time less payments already made.</li>
+        <li>Damage Cover, where included or added, reduces your liability for accidental damage. It does not cover loss, theft, or damage from misuse — full conditions are provided in your plan agreement.</li>
+        <li>These summary terms are for guidance only. Your full plan agreement, provided at sign-up, is the governing document.</li>
+      </ol>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Orbit. All plans subject to approval.</span>
+      <span>Sydney, Australia</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Small preview grid linking straight into the product picker, pre-selecting a device.
+  const FEATURED = [
+    { id:'iphone-17-pro-max', name:'iPhone 17 Pro Max', img:'images/iphone-17-pro-max-silver.png', from:96 },
+    { id:'iphone-air', name:'iPhone Air', img:'images/iphone-air-space-black.webp', from:79 },
+    { id:'iphone-17', name:'iPhone 17', img:'images/iphone-17-black.webp', from:62 },
+    { id:'iphone-16', name:'iPhone 16', img:'images/iphone-16-black.webp', from:41 },
+  ];
+  const grid = document.getElementById('featured-grid');
+  FEATURED.forEach(d => {
+    const a = document.createElement('a');
+    a.className = 'device-tile';
+    a.href = 'product.html?device=' + d.id;
+    a.innerHTML =
+      '<img src="' + d.img + '" alt="' + d.name + '">' +
+      '<div class="dn">' + d.name + '</div>' +
+      '<div class="dp">From $' + d.from + '/mo</div>';
+    grid.appendChild(a);
+  });
+</script>
+
+</body>
+</html>
