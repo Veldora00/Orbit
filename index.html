@@ -276,12 +276,14 @@
 </footer>
 
 <script>
-  // Small preview grid linking straight into the product picker, pre-selecting a device.
+  // Small preview grid linking straight into the product picker.
+  // Currently only iPhone 17 is live — shown across its colour range.
+  // "from" price = real 24mo rate from the pricing sheet ($44/mo at 256GB).
   const FEATURED = [
-    { id:'iphone-17-pro-max', name:'iPhone 17 Pro Max', img:'images/iphone-17-pro-max-silver.png', from:96 },
-    { id:'iphone-air', name:'iPhone Air', img:'images/iphone-air-space-black.webp', from:79 },
-    { id:'iphone-17', name:'iPhone 17', img:'images/iphone-17-black.webp', from:62 },
-    { id:'iphone-16', name:'iPhone 16', img:'images/iphone-16-black.webp', from:41 },
+    { id:'iphone-17', name:'iPhone 17 — Black', img:'images/iphone-17-black.webp', from:44 },
+    { id:'iphone-17', name:'iPhone 17 — Mist Blue', img:'images/iphone-17-mist-blue.webp', from:44 },
+    { id:'iphone-17', name:'iPhone 17 — Sage', img:'images/iphone-17-sage.webp', from:44 },
+    { id:'iphone-17', name:'iPhone 17 — Lavender', img:'images/iphone-17-lavender.webp', from:44 },
   ];
   const grid = document.getElementById('featured-grid');
   FEATURED.forEach(d => {
