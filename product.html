@@ -119,6 +119,14 @@
   .term-pill.active{ border-color:var(--amber); }
   .term-pill.active .price{ color:var(--amber); }
 
+  .cover-toggle{
+    display:flex; align-items:flex-start; gap:12px; border:1px solid var(--ink-line);
+    padding:14px 16px; cursor:pointer; font-size:13px; opacity:0.85; line-height:1.5;
+  }
+  .cover-toggle:hover{ border-color:rgba(244,242,236,0.35); }
+  .cover-toggle input{ margin-top:3px; accent-color:var(--amber); flex-shrink:0; }
+  .field-label b{ color:var(--amber); opacity:1; font-weight:600; }
+
   .summary{
     border:1px solid var(--ink-line); padding:20px; margin:26px 0 20px; font-size:13.5px;
   }
@@ -193,6 +201,14 @@
         <div id="term-rows"></div>
       </div>
 
+      <div class="field">
+        <div class="field-label"><span>Damage Cover <b id="cover-price"></b></span></div>
+        <label class="cover-toggle" id="cover-toggle">
+          <input type="checkbox" id="cover-checkbox">
+          <span>Unlimited repairs for accidental damage, each subject to a service fee. Includes theft and loss cover.</span>
+        </label>
+      </div>
+
       <div class="summary">
         <div class="summary-row"><span>Total over term</span><b id="sum-total">—</b></div>
         <div class="summary-row"><span>Damage cover</span><b id="sum-cover">—</b></div>
@@ -218,41 +234,20 @@
   // ---------------- DEVICE CATALOGUE ----------------
   // RRP figures are approximate current AU launch pricing for the base storage tier,
   // used only to calculate rental pricing under RRP. Not live Apple pricing.
+  // Pricing sourced directly from Talaks' real pricing sheets.
+  // iPhone: 12/24/36mo terms, AppleCare-style Damage Cover flat monthly add-on.
+  // Samsung: 12/24mo only (no 36mo), flat $25/mo Damage Cover add-on, $99 screen
+  // replacement fee thereafter (first screen replacement free).
   const DEVICES = [
-    {
-      id:'iphone-17-pro-max', brand:'Apple', name:'iPhone 17 Pro Max',
-      sub:'6.9-inch Super Retina XDR display with ProMotion, A19 Pro chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
-      storages:[
-        {gb:'256GB', rrp:2199},
-        {gb:'512GB', rrp:2549},
-        {gb:'1TB', rrp:2949},
-      ],
-      colours:[
-        {name:'Silver', img:'images/iphone-17-pro-max-silver.png'},
-        {name:'Deep Blue', img:'images/iphone-17-pro-max-deep-blue.png'},
-        {name:'Cosmic Orange', img:'images/iphone-17-pro-max-cosmic-orange.png'},
-      ]
-    },
-    {
-      id:'iphone-17-pro', brand:'Apple', name:'iPhone 17 Pro',
-      sub:'6.3-inch Super Retina XDR display with ProMotion, A19 Pro chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
-      storages:[
-        {gb:'256GB', rrp:1999},
-        {gb:'512GB', rrp:2349},
-        {gb:'1TB', rrp:2749},
-      ],
-      colours:[
-        {name:'Silver', img:'images/iphone-17-pro-silver.png'},
-        {name:'Deep Blue', img:'images/iphone-17-pro-deep-blue.png'},
-        {name:'Cosmic Orange', img:'images/iphone-17-pro-cosmic-orange.png'},
-      ]
-    },
     {
       id:'iphone-17', brand:'Apple', name:'iPhone 17',
       sub:'6.3-inch Super Retina XDR display, A19 chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
+      careMonthly: 14,
+      coverDesc: 'Unlimited repairs for accidental damage, each subject to a service fee. Includes theft and loss cover.',
+      terms:{ 12:0.497, 24:0.755, 36:0.952 },
       storages:[
         {gb:'256GB', rrp:1399},
-        {gb:'512GB', rrp:1749},
+        {gb:'512GB', rrp:1799},
       ],
       colours:[
         {name:'Black', img:'images/iphone-17-black.webp'},
@@ -263,61 +258,59 @@
       ]
     },
     {
-      id:'iphone-air', brand:'Apple', name:'iPhone Air',
-      sub:'Apple\u2019s thinnest iPhone ever, 6.5-inch Super Retina XDR display, A19 Pro chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
+      id:'galaxy-s26', brand:'Samsung', name:'Galaxy S26',
+      sub:'6.3-inch Dynamic AMOLED 2X display, Exynos 2600 chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
+      careMonthly: 25,
+      coverDesc: '$99 screen replacement fee per repair after your first — your first screen replacement is free.',
+      terms:{ 12: (103*12)/1549, 24: (58*24)/1549 },
       storages:[
-        {gb:'256GB', rrp:1799},
-        {gb:'512GB', rrp:2149},
-        {gb:'1TB', rrp:2549},
+        {gb:'256GB', rrp:1549},
       ],
       colours:[
-        {name:'Space Black', img:'images/iphone-air-space-black.webp'},
-        {name:'Cloud White', img:'images/iphone-air-cloud-white.webp'},
-        {name:'Sky Blue', img:'images/iphone-air-sky-blue.webp'},
+        {name:'Phantom Black', img:'images/galaxy-s26-phantom-black.png'},
       ]
     },
     {
-      id:'iphone-16', brand:'Apple', name:'iPhone 16',
-      sub:'6.1-inch Super Retina XDR display, A18 chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
+      id:'galaxy-s26-plus', brand:'Samsung', name:'Galaxy S26 Plus',
+      sub:'6.7-inch Dynamic AMOLED 2X display, Exynos 2600 chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
+      careMonthly: 25,
+      coverDesc: '$99 screen replacement fee per repair after your first — your first screen replacement is free.',
+      terms:{ 12: (112*12)/1849, 24: (82*24)/1849 },
       storages:[
-        {gb:'128GB', rrp:1399},
-      ],
-      colours:[
-        {name:'Black', img:'images/iphone-16-black.webp'},
-        {name:'White', img:'images/iphone-16-white.webp'},
-        {name:'Pink', img:'images/iphone-16-pink.webp'},
-        {name:'Teal', img:'images/iphone-16-teal.webp'},
-        {name:'Ultramarine', img:'images/iphone-16-ultramarine.webp'},
-      ]
-    },
-    {
-      id:'iphone-16-plus', brand:'Apple', name:'iPhone 16 Plus',
-      sub:'6.7-inch Super Retina XDR display, A18 chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
-      storages:[
-        {gb:'128GB', rrp:1599},
         {gb:'256GB', rrp:1849},
       ],
       colours:[
-        {name:'Black', img:'images/iphone-16-plus-black.webp'},
-        {name:'White', img:'images/iphone-16-plus-white.webp'},
-        {name:'Pink', img:'images/iphone-16-plus-pink.webp'},
-        {name:'Teal', img:'images/iphone-16-plus-teal.webp'},
-        {name:'Ultramarine', img:'images/iphone-16-plus-ultramarine.webp'},
+        {name:'Phantom Black', img:'images/galaxy-s26-plus-phantom-black.png'},
+      ]
+    },
+    {
+      id:'galaxy-s26-ultra', brand:'Samsung', name:'Galaxy S26 Ultra',
+      sub:'6.9-inch Dynamic AMOLED 2X display, Snapdragon 8 Elite Gen 5. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
+      careMonthly: 25,
+      coverDesc: '$99 screen replacement fee per repair after your first — your first screen replacement is free.',
+      terms:{ 12: (128*12)/2199, 24: (95*24)/2199 },
+      storages:[
+        {gb:'256GB', rrp:2199},
+        {gb:'512GB', rrp:2499},
+        {gb:'1TB', rrp:2949},
+      ],
+      colours:[
+        {name:'Phantom Black', img:'images/galaxy-s26-ultra-phantom-black.png'},
       ]
     },
   ];
 
-  const TERMS = [
-    { months:12, pct:0.42, label:'12 months', note:'Fastest device turnover' },
-    { months:24, pct:0.68, label:'24 months', note:'Most popular \u2014 free Damage Cover', recommended:true },
-    { months:36, pct:0.88, label:'36 months', note:'Lowest monthly price' },
-  ];
+  const TERM_META = {
+    12: { label:'12 months', note:'Fastest device turnover' },
+    24: { label:'24 months', note:'Most popular', recommended:true },
+    36: { label:'36 months', note:'Lowest monthly price' },
+  };
 
   const urlParams = new URLSearchParams(window.location.search);
   const requestedDevice = urlParams.get('device');
-  const startDevice = DEVICES.some(d => d.id === requestedDevice) ? requestedDevice : 'iphone-17-pro-max';
+  const startDevice = DEVICES.some(d => d.id === requestedDevice) ? requestedDevice : 'iphone-17';
 
-  let state = { deviceId: startDevice, storageIdx:0, colourIdx:0, termIdx:1 };
+  let state = { deviceId: startDevice, storageIdx:0, colourIdx:0, termIdx:24, cover:false };
 
   function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
   function getDevice(){ return DEVICES.find(d => d.id === state.deviceId); }
@@ -326,9 +319,14 @@
     const device = getDevice();
     const storage = device.storages[state.storageIdx];
     const colour = device.colours[state.colourIdx];
-    const term = TERMS[state.termIdx];
-    const total = storage.rrp * term.pct;
-    const monthly = total / term.months;
+    const deviceTermMonths = Object.keys(device.terms).map(Number);
+    if (!deviceTermMonths.includes(state.termIdx)) state.termIdx = deviceTermMonths[0];
+    const months = state.termIdx;
+    const pct = device.terms[months];
+    const total = storage.rrp * pct;
+    const monthly = total / months;
+    const coverMonthly = state.cover ? device.careMonthly : 0;
+    const monthlyWithCover = monthly + coverMonthly;
 
     document.getElementById('crumb-brand').textContent = device.brand;
     document.getElementById('crumb-name').textContent = device.name;
@@ -337,16 +335,23 @@
     document.getElementById('stage-img').src = colour.img;
     document.getElementById('stage-img').alt = device.name + ' in ' + colour.name;
     document.getElementById('colour-name').textContent = colour.name;
-    document.getElementById('sum-total').textContent = money(total) + ' total (' + Math.round(term.pct*100) + '% of RRP)';
-    document.getElementById('sum-cover').textContent = term.months >= 24 ? 'Included' : 'Available as add-on';
-    document.getElementById('cta-price').textContent = money(monthly) + '/mo';
+    document.getElementById('sum-total').textContent = money(total) + (state.cover ? ' + ' + money(coverMonthly * months) + ' cover' : '') + ' over term';
+    document.getElementById('sum-cover').textContent = state.cover ? money(device.careMonthly) + '/mo added' : 'Not added';
+    document.getElementById('cta-price').textContent = money(monthlyWithCover) + '/mo';
+    document.getElementById('cover-price').textContent = '+' + money(device.careMonthly) + '/mo';
+    document.querySelector('#cover-toggle span').textContent = device.coverDesc;
+
+    const coverCheckbox = document.getElementById('cover-checkbox');
+    coverCheckbox.checked = state.cover;
+    coverCheckbox.onchange = () => { state.cover = coverCheckbox.checked; render(); };
 
     document.getElementById('cta-button').onclick = () => {
       const params = new URLSearchParams({
         device: device.id,
         storage: storage.gb,
         colour: colour.name,
-        term: term.months
+        term: months,
+        cover: state.cover ? '1' : '0'
       });
       window.location.href = 'checkout.html?' + params.toString();
     };
@@ -384,18 +389,20 @@
       colourRow.appendChild(s);
     });
 
-    // term rows
+    // term rows — only the terms this device actually offers
     const termRows = document.getElementById('term-rows');
     termRows.innerHTML = '';
-    TERMS.forEach((t, i) => {
-      const tot = storage.rrp * t.pct;
-      const mo = tot / t.months;
+    deviceTermMonths.forEach(m => {
+      const meta = TERM_META[m];
+      const p = device.terms[m];
+      const tot = storage.rrp * p;
+      const mo = tot / m;
       const row = document.createElement('button');
-      row.className = 'term-pill' + (i === state.termIdx ? ' active' : '');
+      row.className = 'term-pill' + (m === months ? ' active' : '');
       row.innerHTML =
-        '<span class="t">' + t.label + (t.recommended ? '<span class="tag">Best value</span>' : '') + '</span>' +
+        '<span class="t">' + meta.label + (meta.recommended ? '<span class="tag">Popular</span>' : '') + '</span>' +
         '<span class="price">' + money(mo) + '<small>/mo</small></span>';
-      row.onclick = () => { state.termIdx = i; render(); };
+      row.onclick = () => { state.termIdx = m; render(); };
       termRows.appendChild(row);
     });
 
@@ -405,7 +412,9 @@
     DEVICES.forEach(d => {
       const card = document.createElement('button');
       card.className = 'device-card' + (d.id === state.deviceId ? ' active' : '');
-      const cheapest = Math.min(...d.storages.map(s => (s.rrp * TERMS[1].pct) / TERMS[1].months));
+      const dTerms = Object.keys(d.terms).map(Number);
+      const cheapTerm = dTerms.includes(24) ? 24 : dTerms[0];
+      const cheapest = Math.min(...d.storages.map(s => (s.rrp * d.terms[cheapTerm]) / cheapTerm));
       card.innerHTML =
         '<img src="' + d.colours[0].img + '" alt="' + d.name + '">' +
         '<div class="dn">' + d.name + '</div>' +
