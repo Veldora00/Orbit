@@ -113,32 +113,48 @@
 </div>
 
 <script>
-  // Same catalogue as product.html, kept in sync manually for now —
-  // once there's a backend, this should be a single shared source of truth.
+  // Pricing kept in sync with product.html — sourced from Talaks' real
+  // iPhone and Samsung pricing sheets. Once there's a backend, this should
+  // be one shared source of truth instead of duplicated per page.
   const DEVICES = {
-    'iphone-17-pro-max': { name:'iPhone 17 Pro Max', colours:{ 'Silver':'images/iphone-17-pro-max-silver.png', 'Deep Blue':'images/iphone-17-pro-max-deep-blue.png', 'Cosmic Orange':'images/iphone-17-pro-max-cosmic-orange.png' }, storages:{'256GB':2199,'512GB':2549,'1TB':2949} },
-    'iphone-17-pro': { name:'iPhone 17 Pro', colours:{ 'Silver':'images/iphone-17-pro-silver.png', 'Deep Blue':'images/iphone-17-pro-deep-blue.png', 'Cosmic Orange':'images/iphone-17-pro-cosmic-orange.png' }, storages:{'256GB':1999,'512GB':2349,'1TB':2749} },
-    'iphone-17': { name:'iPhone 17', colours:{ 'Black':'images/iphone-17-black.webp','White':'images/iphone-17-white.webp','Mist Blue':'images/iphone-17-mist-blue.webp','Sage':'images/iphone-17-sage.webp','Lavender':'images/iphone-17-lavender.webp' }, storages:{'256GB':1399,'512GB':1749} },
-    'iphone-air': { name:'iPhone Air', colours:{ 'Space Black':'images/iphone-air-space-black.webp','Cloud White':'images/iphone-air-cloud-white.webp','Sky Blue':'images/iphone-air-sky-blue.webp' }, storages:{'256GB':1799,'512GB':2149,'1TB':2549} },
-    'iphone-16': { name:'iPhone 16', colours:{ 'Black':'images/iphone-16-black.webp','White':'images/iphone-16-white.webp','Pink':'images/iphone-16-pink.webp','Teal':'images/iphone-16-teal.webp','Ultramarine':'images/iphone-16-ultramarine.webp' }, storages:{'128GB':1399} },
-    'iphone-16-plus': { name:'iPhone 16 Plus', colours:{ 'Black':'images/iphone-16-plus-black.webp','White':'images/iphone-16-plus-white.webp','Pink':'images/iphone-16-plus-pink.webp','Teal':'images/iphone-16-plus-teal.webp','Ultramarine':'images/iphone-16-plus-ultramarine.webp' }, storages:{'128GB':1599,'256GB':1849} },
+    'iphone-17': {
+      name:'iPhone 17', careMonthly:14, terms:{12:0.497,24:0.755,36:0.952},
+      colours:{ 'Black':'images/iphone-17-black.webp','White':'images/iphone-17-white.webp','Mist Blue':'images/iphone-17-mist-blue.webp','Sage':'images/iphone-17-sage.webp','Lavender':'images/iphone-17-lavender.webp' },
+      storages:{'256GB':1399,'512GB':1799}
+    },
+    'galaxy-s26': {
+      name:'Galaxy S26', careMonthly:25, terms:{12:(103*12)/1549, 24:(58*24)/1549},
+      colours:{ 'Phantom Black':'images/galaxy-s26-phantom-black.png' },
+      storages:{'256GB':1549}
+    },
+    'galaxy-s26-plus': {
+      name:'Galaxy S26 Plus', careMonthly:25, terms:{12:(112*12)/1849, 24:(82*24)/1849},
+      colours:{ 'Phantom Black':'images/galaxy-s26-plus-phantom-black.png' },
+      storages:{'256GB':1849}
+    },
+    'galaxy-s26-ultra': {
+      name:'Galaxy S26 Ultra', careMonthly:25, terms:{12:(128*12)/2199, 24:(95*24)/2199},
+      colours:{ 'Phantom Black':'images/galaxy-s26-ultra-phantom-black.png' },
+      storages:{'256GB':2199,'512GB':2499,'1TB':2949}
+    },
   };
-  const TERMS = { 12:0.42, 24:0.68, 36:0.88 };
 
   const params = new URLSearchParams(window.location.search);
   const deviceId = params.get('device');
   const storageGb = params.get('storage');
   const colourName = params.get('colour');
   const termMonths = parseInt(params.get('term'), 10);
+  const coverSelected = params.get('cover') === '1';
 
   function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
 
   const device = DEVICES[deviceId];
   if (device) {
     const rrp = device.storages[storageGb];
-    const pct = TERMS[termMonths];
+    const pct = device.terms[termMonths];
     const total = rrp * pct;
     const monthly = total / termMonths;
+    const coverMonthly = coverSelected ? device.careMonthly : 0;
     const img = device.colours[colourName];
 
     document.getElementById('plan-img').src = img;
@@ -148,9 +164,9 @@
 
     document.getElementById('sum-device').textContent = device.name;
     document.getElementById('sum-spec').textContent = storageGb + ' / ' + colourName;
-    document.getElementById('sum-term').textContent = termMonths + ' months';
-    document.getElementById('sum-total').textContent = money(total);
-    document.getElementById('sum-monthly').textContent = money(monthly) + '/mo';
+    document.getElementById('sum-term').textContent = termMonths + ' months' + (coverSelected ? ' + Damage Cover' : '');
+    document.getElementById('sum-total').textContent = money(total + coverMonthly * termMonths);
+    document.getElementById('sum-monthly').textContent = money(monthly + coverMonthly) + '/mo';
   } else {
     document.querySelector('.wrap').innerHTML = '<h1>No plan selected</h1><p class="lede">Head back and choose a device first.</p><a href="product.html" class="action-btn" style="display:inline-block; text-decoration:none; text-align:center;">Choose a device</a>';
   }
