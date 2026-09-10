@@ -276,27 +276,39 @@
 </footer>
 
 <script>
-  // Small preview grid linking straight into the product picker.
-  // Currently only iPhone 17 is live — shown across its colour range.
-  // "from" price = real 24mo rate from the pricing sheet ($44/mo at 256GB).
-  const FEATURED = [
-    { id:'iphone-17', name:'iPhone 17 — Black', img:'images/Iphone 17 Black.webp', from:44 },
-    { id:'iphone-17', name:'iPhone 17 — Mist Blue', img:'images/Iphone 17 Mist Blue.webp', from:44 },
-    { id:'iphone-17', name:'iPhone 17 — Sage', img:'images/Iphone 17 Sage.webp', from:44 },
-    { id:'iphone-17', name:'iPhone 17 — Lavender', img:'images/Iphone 17 Lavender.webp', from:44 },
-  ];
-  const grid = document.getElementById('featured-grid');
-  FEATURED.forEach(d => {
-    const a = document.createElement('a');
-    a.className = 'device-tile';
-    a.href = 'product.html?device=' + d.id;
-    a.innerHTML =
-      '<img src="' + d.img + '" alt="' + d.name + '">' +
-      '<div class="dn">' + d.name + '</div>' +
-      '<div class="dp">From $' + d.from + '/mo</div>';
-    grid.appendChild(a);
-  });
+  // Featured tiles pulled from the same data/devices.json file the product
+  // and checkout pages use — one tile per model (not per colour), so the
+  // homepage can never link to a device that isn't actually live.
+  function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
+
+  fetch('data/devices.json')
+    .then(r => r.json())
+    .then(data => {
+      const live = data.devices.filter(d => d.terms !== null);
+      const grid = document.getElementById('featured-grid');
+      grid.innerHTML = '';
+
+      live.forEach(d => {
+        // cheapest monthly price across this device's terms, at its lowest storage tier
+        const cheapestStorage = d.storages[0];
+        const cheapest = Math.min(
+          ...Object.entries(d.terms).map(([months, pct]) => (cheapestStorage.rrp * pct) / Number(months))
+        );
+
+        const a = document.createElement('a');
+        a.className = 'device-tile';
+        a.href = 'product.html?device=' + d.id;
+        a.innerHTML =
+          '<img src="' + d.colours[0].img + '" alt="' + d.name + '">' +
+          '<div class="dn">' + d.name + '</div>' +
+          '<div class="dp">From ' + money(cheapest) + '/mo</div>';
+        grid.appendChild(a);
+      });
+    })
+    .catch(err => console.error('Could not load featured devices:', err));
 </script>
 
 </body>
 </html>
+
+
