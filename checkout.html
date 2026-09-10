@@ -113,32 +113,8 @@
 </div>
 
 <script>
-  // Pricing kept in sync with product.html — sourced from Talaks' real
-  // iPhone and Samsung pricing sheets. Once there's a backend, this should
-  // be one shared source of truth instead of duplicated per page.
-  const DEVICES = {
-    'iphone-17': {
-      name:'iPhone 17', careMonthly:14, terms:{12:0.497,24:0.755,36:0.952},
-      colours:{ 'Black':'images/Iphone 17 Black.webp','White':'images/Iphone 17 White.webp','Mist Blue':'images/Iphone 17 Mist Blue.webp','Sage':'images/Iphone 17 Sage.webp','Lavender':'images/Iphone 17 Lavender.webp' },
-      storages:{'256GB':1399,'512GB':1799}
-    },
-    'galaxy-s26': {
-      name:'Galaxy S26', careMonthly:25, terms:{12:(103*12)/1549, 24:(58*24)/1549},
-      colours:{ 'Phantom Black':'images/galaxy-s26-phantom-black.png' },
-      storages:{'256GB':1549}
-    },
-    'galaxy-s26-plus': {
-      name:'Galaxy S26 Plus', careMonthly:25, terms:{12:(112*12)/1849, 24:(82*24)/1849},
-      colours:{ 'Phantom Black':'images/galaxy-s26-plus-phantom-black.png' },
-      storages:{'256GB':1849}
-    },
-    'galaxy-s26-ultra': {
-      name:'Galaxy S26 Ultra', careMonthly:25, terms:{12:(128*12)/2199, 24:(95*24)/2199},
-      colours:{ 'Phantom Black':'images/galaxy-s26-ultra-phantom-black.png' },
-      storages:{'256GB':2199,'512GB':2499,'1TB':2949}
-    },
-  };
-
+  // Device/pricing data now lives in data/devices.json — shared with
+  // product.html so pricing only needs to be edited in one place.
   const params = new URLSearchParams(window.location.search);
   const deviceId = params.get('device');
   const storageGb = params.get('storage');
@@ -148,28 +124,37 @@
 
   function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
 
-  const device = DEVICES[deviceId];
-  if (device) {
-    const rrp = device.storages[storageGb];
-    const pct = device.terms[termMonths];
-    const total = rrp * pct;
-    const monthly = total / termMonths;
-    const coverMonthly = coverSelected ? device.careMonthly : 0;
-    const img = device.colours[colourName];
+  fetch('data/devices.json')
+    .then(r => r.json())
+    .then(data => {
+      const device = data.devices.find(d => d.id === deviceId && d.terms !== null);
+      if (device) {
+        const storage = device.storages.find(s => s.gb === storageGb);
+        const rrp = storage.rrp;
+        const pct = device.terms[termMonths];
+        const total = rrp * pct;
+        const monthly = total / termMonths;
+        const coverMonthly = coverSelected ? device.careMonthly : 0;
+        const colour = device.colours.find(c => c.name === colourName);
 
-    document.getElementById('plan-img').src = img;
-    document.getElementById('plan-img').alt = device.name;
-    document.getElementById('plan-name').textContent = device.name;
-    document.getElementById('plan-detail').textContent = storageGb + ' \u2014 ' + colourName;
+        document.getElementById('plan-img').src = colour.img;
+        document.getElementById('plan-img').alt = device.name;
+        document.getElementById('plan-name').textContent = device.name;
+        document.getElementById('plan-detail').textContent = storageGb + ' \u2014 ' + colourName;
 
-    document.getElementById('sum-device').textContent = device.name;
-    document.getElementById('sum-spec').textContent = storageGb + ' / ' + colourName;
-    document.getElementById('sum-term').textContent = termMonths + ' months' + (coverSelected ? ' + Damage Cover' : '');
-    document.getElementById('sum-total').textContent = money(total + coverMonthly * termMonths);
-    document.getElementById('sum-monthly').textContent = money(monthly + coverMonthly) + '/mo';
-  } else {
-    document.querySelector('.wrap').innerHTML = '<h1>No plan selected</h1><p class="lede">Head back and choose a device first.</p><a href="product.html" class="action-btn" style="display:inline-block; text-decoration:none; text-align:center;">Choose a device</a>';
-  }
+        document.getElementById('sum-device').textContent = device.name;
+        document.getElementById('sum-spec').textContent = storageGb + ' / ' + colourName;
+        document.getElementById('sum-term').textContent = termMonths + ' months' + (coverSelected ? ' + Damage Cover' : '');
+        document.getElementById('sum-total').textContent = money(total + coverMonthly * termMonths);
+        document.getElementById('sum-monthly').textContent = money(monthly + coverMonthly) + '/mo';
+      } else {
+        document.querySelector('.wrap').innerHTML = '<h1>No plan selected</h1><p class="lede">Head back and choose a device first.</p><a href="product.html" class="action-btn" style="display:inline-block; text-decoration:none; text-align:center;">Choose a device</a>';
+      }
+    })
+    .catch(err => {
+      document.querySelector('.wrap').innerHTML = '<p style="padding:60px 0;">Couldn\'t load device data. Check that data/devices.json exists next to this page.</p>';
+      console.error(err);
+    });
 
   // Placeholder interaction only — real version replaces this with an actual
   // Didit session creation + redirect, then unlocks step 2 on a verified webhook.
