@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Talaks — Choose your device</title>
+<meta name="description" content="Brand-new iPhone and Galaxy flagships on a fixed monthly plan. Pick a brand, then your model.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,440;9..144,560&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -152,7 +153,12 @@
     'sb_publishable__KTvqClMNFPO2ZHkueUJmA_101Fl1_D'
   );
 
-  function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
+  function money(n){
+    const r = Math.round(n * 100) / 100;
+    return '$' + r.toLocaleString('en-AU', r % 1 === 0
+      ? { maximumFractionDigits: 0 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
   const stepBrand = document.getElementById('step-brand');
   const stepModels = document.getElementById('step-models');
