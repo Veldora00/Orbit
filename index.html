@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Talaks — Flagship phones, on your terms</title>
+<title>Talaks — Always the newest phone, never stuck with it</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,440;9..144,560;9..144,640&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -204,8 +204,8 @@
 <header class="hero">
   <div class="hero-inner">
     <div class="hero-copy">
-      <h1 class="headline">Carry the latest phone. <span class="accent">Never own the debt.</span></h1>
-      <p class="hero-sub">A brand-new iPhone or Galaxy flagship, delivered on a fixed monthly plan. No upfront cost, no bank loan — and no debt waiting for you when the term ends.</p>
+      <h1 class="headline">Carry the newest tech. <span class="accent">Never get stuck with it.</span></h1>
+      <p class="hero-sub">Brand-new iPhone and Galaxy flagships on a fixed monthly plan. Move to the newest model when your term ends — no upfront cost, no loan, nothing owing when you hand it back.</p>
       <div class="hero-ctas">
         <a href="catalog.html" class="btn-primary">See your monthly price</a>
         <a href="#how" class="btn-text">How it works</a>
@@ -362,7 +362,12 @@
 </footer>
 
 <script>
-  function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
+  function money(n){
+    const r = Math.round(n * 100) / 100;
+    return '$' + r.toLocaleString('en-AU', r % 1 === 0
+      ? { maximumFractionDigits: 0 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
   const supabaseClient = supabase.createClient(
     'https://asajwviusixmnoolawnb.supabase.co',
