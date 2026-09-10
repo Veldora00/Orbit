@@ -57,6 +57,7 @@
 
   .microcopy{ font-size:12.5px; opacity:0.5; margin-top:20px; line-height:1.6; text-align:center; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -124,11 +125,36 @@
 
   function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
 
-  fetch('data/devices.json')
-    .then(r => r.json())
-    .then(data => {
-      const device = data.devices.find(d => d.id === deviceId && d.terms !== null);
-      if (device) {
+  // Device/pricing data lives in Supabase now (table: devices), shared with
+  // product.html and the admin panel — one place to edit, everywhere updates.
+  const supabaseClient = supabase.createClient(
+    'https://asajwviusixmnoolawnb.supabase.co',
+    'sb_publishable__KTvqClMNFPO2ZHkueUJmA_101Fl1_D'
+  );
+
+  const params = new URLSearchParams(window.location.search);
+  const deviceId = params.get('device');
+  const storageGb = params.get('storage');
+  const colourName = params.get('colour');
+  const termMonths = parseInt(params.get('term'), 10);
+  const coverSelected = params.get('cover') === '1';
+
+  function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
+
+  supabaseClient
+    .from('devices')
+    .select('*')
+    .eq('id', deviceId)
+    .not('terms', 'is', null)
+    .maybeSingle()
+    .then(({ data: row, error }) => {
+      if (error) console.error(error);
+
+      if (row) {
+        const device = {
+          id: row.id, name: row.name, careMonthly: row.care_monthly,
+          terms: row.terms, storages: row.storages, colours: row.colours,
+        };
         const storage = device.storages.find(s => s.gb === storageGb);
         const rrp = storage.rrp;
         const pct = device.terms[termMonths];
@@ -150,10 +176,6 @@
       } else {
         document.querySelector('.wrap').innerHTML = '<h1>No plan selected</h1><p class="lede">Head back and choose a device first.</p><a href="product.html" class="action-btn" style="display:inline-block; text-decoration:none; text-align:center;">Choose a device</a>';
       }
-    })
-    .catch(err => {
-      document.querySelector('.wrap').innerHTML = '<p style="padding:60px 0;">Couldn\'t load device data. Check that data/devices.json exists next to this page.</p>';
-      console.error(err);
     });
 
   // Placeholder interaction only — real version replaces this with an actual
