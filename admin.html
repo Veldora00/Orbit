@@ -292,14 +292,14 @@
           24: existing.care_terms?.[24] ?? '',
           36: existing.care_terms?.[36] ?? '',
         },
-        storages: existing.storages && existing.storages.length ? JSON.parse(JSON.stringify(existing.storages)) : [{ gb:'', rrp:'' }],
+        storages: existing.storages && existing.storages.length ? JSON.parse(JSON.stringify(existing.storages)) : [{ gb:'', rrp:'', rrp_was:'' }],
         colours: existing.colours && existing.colours.length ? JSON.parse(JSON.stringify(existing.colours)) : [{ name:'', img:'' }],
       };
     } else {
       formState = {
         isNew: true, id: '', brand: 'Apple', name: '', sub: '', care_monthly: '', cover_desc: '',
         status: 'draft', monthly: { 12:'', 24:'', 36:'' }, care: { 12:'', 24:'', 36:'' },
-        storages: [{ gb:'', rrp:'' }], colours: [{ name:'', img:'' }],
+        storages: [{ gb:'', rrp:'', rrp_was:'' }], colours: [{ name:'', img:'' }],
       };
     }
     renderForm();
@@ -344,8 +344,9 @@
         '<p class="terms-note">Tick a term to offer it. Enter what the customer pays each month for the <strong>base storage tier</strong> — the larger tiers are priced up automatically at the same ratio. Leave a term unticked and it won\'t appear on the site (Samsung plans, for example, run 12 and 24 months only).</p>' +
       '</fieldset>' +
 
-      '<fieldset><legend>Storage tiers</legend><div id="storage-rows"></div>' +
-        '<button type="button" class="btn-add" id="add-storage">+ Add storage tier</button></fieldset>' +
+      '<fieldset><legend>Storage tiers &amp; price</legend><div id="storage-rows"></div>' +
+        '<button type="button" class="btn-add" id="add-storage">+ Add storage tier</button>' +
+        '<p class="terms-note">Drop the <strong>Price now</strong> to run a sale — every monthly price recalculates itself. Put the old price in <strong>Was</strong> and the site shows it crossed out with a “Save $X/mo” flag. Leave <strong>Was</strong> empty for no sale.</p></fieldset>' +
 
       '<fieldset><legend>Colours</legend><div id="colour-rows"></div>' +
         '<button type="button" class="btn-add" id="add-colour">+ Add colour</button></fieldset>' +
@@ -382,7 +383,7 @@
       formState.care[inp.dataset.careVal] = inp.value;
     });
 
-    document.getElementById('add-storage').onclick = () => { formState.storages.push({ gb:'', rrp:'' }); renderStorageRows(); };
+    document.getElementById('add-storage').onclick = () => { formState.storages.push({ gb:'', rrp:'', rrp_was:'' }); renderStorageRows(); };
     document.getElementById('add-colour').onclick = () => { formState.colours.push({ name:'', img:'' }); renderColourRows(); };
     document.getElementById('cancel-btn').onclick = () => { formBox.classList.add('hidden'); formBox.innerHTML=''; };
     document.getElementById('save-btn').onclick = saveDevice;
@@ -410,12 +411,14 @@
       row.className = 'dyn-row';
       row.innerHTML =
         '<input placeholder="e.g. 256GB" value="' + escapeHtml(s.gb) + '" data-s-gb="' + i + '">' +
-        '<input type="number" placeholder="RRP $" value="' + escapeHtml(s.rrp) + '" data-s-rrp="' + i + '">' +
+        '<input type="number" placeholder="Price now $" value="' + escapeHtml(s.rrp) + '" data-s-rrp="' + i + '">' +
+        '<input type="number" placeholder="Was $ (optional)" value="' + escapeHtml(s.rrp_was == null ? '' : s.rrp_was) + '" data-s-was="' + i + '">' +
         '<button type="button" class="dyn-remove" data-s-remove="' + i + '">×</button>';
       wrap.appendChild(row);
     });
     wrap.querySelectorAll('[data-s-gb]').forEach(inp => inp.oninput = () => formState.storages[inp.dataset.sGb].gb = inp.value);
     wrap.querySelectorAll('[data-s-rrp]').forEach(inp => inp.oninput = () => formState.storages[inp.dataset.sRrp].rrp = inp.value);
+    wrap.querySelectorAll('[data-s-was]').forEach(inp => inp.oninput = () => formState.storages[inp.dataset.sWas].rrp_was = inp.value);
     wrap.querySelectorAll('[data-s-remove]').forEach(btn => btn.onclick = () => { formState.storages.splice(btn.dataset.sRemove,1); renderStorageRows(); });
   }
 
@@ -460,7 +463,15 @@
 
     const storages = f.storages
       .filter(s => s.gb !== '' && s.rrp !== '')
-      .map(s => ({ gb: s.gb, rrp: Number(s.rrp) }));
+      .map(s => {
+        const tier = { gb: s.gb, rrp: Number(s.rrp) };
+        // Only keep a "was" price if it's actually higher than the current one,
+        // so a leftover or mistyped value can't show a fake discount.
+        if (s.rrp_was !== '' && s.rrp_was != null && Number(s.rrp_was) > Number(s.rrp)){
+          tier.rrp_was = Number(s.rrp_was);
+        }
+        return tier;
+      });
     const colours = f.colours
       .filter(c => c.name !== '' && c.img !== '')
       .map(c => ({ name: c.name, img: c.img }));
