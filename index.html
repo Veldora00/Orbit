@@ -130,6 +130,7 @@
     padding-top:36px; border-top:1px solid var(--line); font-size:13px; opacity:0.55; flex-wrap:wrap; gap:16px;
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -276,20 +277,26 @@
 </footer>
 
 <script>
-  // Featured tiles pulled from the same data/devices.json file the product
-  // and checkout pages use — one tile per model (not per colour), so the
-  // homepage can never link to a device that isn't actually live.
+  // Featured tiles pulled from Supabase (table: devices) — same source the
+  // product/checkout pages and admin panel use. One tile per model.
   function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
 
-  fetch('data/devices.json')
-    .then(r => r.json())
-    .then(data => {
-      const live = data.devices.filter(d => d.terms !== null);
+  const supabaseClient = supabase.createClient(
+    'https://asajwviusixmnoolawnb.supabase.co',
+    'sb_publishable__KTvqClMNFPO2ZHkueUJmA_101Fl1_D'
+  );
+
+  supabaseClient
+    .from('devices')
+    .select('*')
+    .not('terms', 'is', null)
+    .then(({ data, error }) => {
+      if (error || !data) { console.error(error); return; }
+
       const grid = document.getElementById('featured-grid');
       grid.innerHTML = '';
 
-      live.forEach(d => {
-        // cheapest monthly price across this device's terms, at its lowest storage tier
+      data.forEach(d => {
         const cheapestStorage = d.storages[0];
         const cheapest = Math.min(
           ...Object.entries(d.terms).map(([months, pct]) => (cheapestStorage.rrp * pct) / Number(months))
@@ -310,5 +317,3 @@
 
 </body>
 </html>
-
-
