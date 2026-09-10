@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talaks — Confirm your plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,440;9..144,560&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/talaks.css">
+<style>
+  /* Checkout is a stepper: a progress rail across the top, then one open
+     panel at a time. Distinct from the account dashboard and the sign-in card. */
+  .checkout{ max-width:820px; margin:0 auto; padding:0 28px 90px; }
+  @media (max-width:640px){ .checkout{ padding:0 20px 70px; } }
+
+  .rail{ display:flex; align-items:center; gap:8px; margin:36px 0 30px; }
+  .rail-step{ display:flex; align-items:center; gap:9px; font-size:13px; color:var(--ink-faint); white-space:nowrap; }
+  .rail-step .dot{
+    width:22px; height:22px; border-radius:50%; border:1.5px solid var(--line-strong);
+    display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700;
+    color:var(--ink-faint); background:var(--paper); flex:none;
+  }
+  .rail-step.active{ color:var(--ink); font-weight:600; }
+  .rail-step.active .dot{ border-color:var(--brand); background:var(--brand); color:var(--brand-ink); }
+  .rail-step.done{ color:var(--teal); }
+  .rail-step.done .dot{ border-color:var(--teal); background:var(--teal); color:var(--brand-ink); }
+  .rail-line{ flex:1; height:1.5px; background:var(--line-strong); min-width:12px; }
+  @media (max-width:600px){ .rail-step span.label{ display:none; } .rail-line{ min-width:0; } }
+
+  .plan-row{ display:flex; gap:18px; align-items:center; }
+  .plan-row img{ width:70px; height:90px; object-fit:contain; background:var(--paper); padding:8px; border:1px solid var(--line); border-radius:10px; }
+  .plan-details .pn{ font-size:17px; font-weight:600; margin-bottom:4px; }
+  .plan-details .pd{ font-size:13.5px; color:var(--ink-dim); }
+
+  .summary-row{ display:flex; justify-content:space-between; padding:9px 0; font-size:14px; color:var(--ink-dim); }
+  .summary-row:not(:last-child){ border-bottom:1px solid var(--line); }
+  .summary-row b{ color:var(--ink); }
+  .summary-total{ font-family:var(--serif); font-size:22px; color:var(--brand); }
+
+  .step-copy{ font-size:13.5px; color:var(--ink-dim); margin:0 0 16px; }
+
+  /* A completed step collapses to a one-line recap with an edit affordance. */
+  .recap{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; font-size:14px; color:var(--ink-dim); }
+  .recap .lines{ line-height:1.7; }
+  .recap b{ color:var(--ink); font-weight:500; }
+
+  .loading{ text-align:center; padding:80px 0; color:var(--ink-faint); font-size:14px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<nav>
+  <div class="wrap row">
+    <a href="index.html" class="brand">Tal<span>a</span>ks</a>
+    <div class="navlinks">
+      <a href="catalog.html">&larr; Back to devices</a>
+    </div>
+  </div>
+</nav>
+
+<div id="loading" class="loading">Loading your plan…</div>
+
+<div class="checkout" id="checkout" style="display:none;">
+
+  <h1 class="page-title">Confirm your plan</h1>
+  <p class="lede">Three steps before your device ships — where it goes, who you are, then payment.</p>
+
+  <div class="rail">
+    <div class="rail-step active" id="rail-1"><span class="dot">1</span><span class="label">Delivery</span></div>
+    <div class="rail-line"></div>
+    <div class="rail-step" id="rail-2"><span class="dot">2</span><span class="label">Identity</span></div>
+    <div class="rail-line"></div>
+    <div class="rail-step" id="rail-3"><span class="dot">3</span><span class="label">Payment</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Your selection</div>
+    <div class="plan-row">
+      <img id="plan-img" src="" alt="">
+      <div class="plan-details">
+        <div class="pn" id="plan-name">—</div>
+        <div class="pd" id="plan-detail">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1 — delivery details -->
+  <div class="card" id="card-delivery">
+    <div class="card-title">
+      <span class="step-num" id="num-1">1</span> Delivery details
+      <span class="status-pill pending" id="delivery-status" style="margin-left:auto;">Needed</span>
+    </div>
+
+    <div id="delivery-form">
+      <p class="step-copy">Where should the device go? We’ll use these details for delivery and returns.</p>
+      <div class="field">
+        <label for="d-name">Full name</label>
+        <input type="text" id="d-name" autocomplete="name" placeholder="As it appears on your ID">
+      </div>
+      <div class="field">
+        <label for="d-phone">Phone</label>
+        <input type="tel" id="d-phone" autocomplete="tel" placeholder="04XX XXX XXX">
+      </div>
+      <div class="field">
+        <label for="d-address">Street address</label>
+        <input type="text" id="d-address" autocomplete="address-line1" placeholder="12 Example Street">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="d-suburb">Suburb</label>
+          <input type="text" id="d-suburb" autocomplete="address-level2">
+        </div>
+        <div class="field">
+          <label for="d-state">State</label>
+          <select id="d-state">
+            <option value="">Select…</option>
+            <option>NSW</option><option>VIC</option><option>QLD</option><option>WA</option>
+            <option>SA</option><option>TAS</option><option>ACT</option><option>NT</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="d-postcode">Postcode</label>
+          <input type="text" id="d-postcode" autocomplete="postal-code" inputmode="numeric" maxlength="4">
+        </div>
+      </div>
+      <div class="form-error" id="d-error"></div>
+      <button class="action-btn" id="d-btn" onclick="saveDelivery()">Save and continue</button>
+    </div>
+
+    <div id="delivery-recap" style="display:none;">
+      <div class="recap">
+        <div class="lines" id="recap-lines"></div>
+        <button class="text-btn" onclick="editDelivery()">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 — identity -->
+  <div class="card locked" id="card-identity">
+    <div class="card-title">
+      <span class="step-num idle" id="num-2">2</span> Verify your identity
+      <span class="status-pill pending" id="didit-status" style="margin-left:auto;">Locked</span>
+    </div>
+    <p class="step-copy">We use Didit to confirm who you are — a photo ID and a quick liveness check, done on their secure page, not ours.</p>
+    <div class="form-error" id="v-error"></div>
+    <button class="action-btn" id="btn-verify" onclick="startVerification()" disabled>Start identity verification</button>
+  </div>
+
+  <!-- Step 3 — payment -->
+  <div class="card locked" id="card-payment">
+    <div class="card-title">
+      <span class="step-num idle" id="num-3">3</span> Set up payment
+      <span class="status-pill pending" id="pay-status" style="margin-left:auto;">Locked</span>
+    </div>
+    <p class="step-copy">Your card is entered directly on Stripe’s secure page — it never touches Talaks’ servers.</p>
+    <p class="form-note" style="margin-bottom:0;">Stripe checkout is still being connected. This unlocks as soon as it’s live.</p>
+    <button class="action-btn secondary" id="btn-pay" disabled>Continue to payment</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Order summary</div>
+    <div class="summary-row"><span>Device</span><b id="sum-device">—</b></div>
+    <div class="summary-row"><span>Storage / Colour</span><b id="sum-spec">—</b></div>
+    <div class="summary-row"><span>Term</span><b id="sum-term">—</b></div>
+    <div class="summary-row"><span>Total over term</span><b id="sum-total">—</b></div>
+    <div class="summary-row"><span>Monthly payment</span><b class="summary-total" id="sum-monthly">—</b></div>
+  </div>
+
+  <p class="microcopy">Identity verification is live and runs on Didit’s hosted flow. Payment is still in development — no charge happens yet.</p>
+</div>
+
+<footer class="site-foot">
+  <div class="wrap foot-row">
+    <div class="foot-links">
+      <a href="blog.html">Journal</a>
+      <a href="faq.html">FAQs</a>
+      <a href="terms.html">Terms of Use</a>
+      <a href="terms.html#damage-cover">Damage Cover &amp; fees</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="mailto:info@talaks.com">info@talaks.com</a>
+    </div>
+    <span>© 2026 Talaks. Sydney, Australia.</span>
+  </div>
+</footer>
+
+<script src="assets/auth.js"></script>
+<script>
+  var PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="180"><rect width="140" height="180" fill="#FBF8F3"/><text x="50%" y="50%" font-family="sans-serif" font-size="10" fill="#8B93A1" text-anchor="middle" dominant-baseline="middle">No photo</text></svg>'
+  );
+  var PLAN_KEY = 'talaks_plan';
+  var VERIFY_KEY = 'talaks_verification_session';
+
+  var user = null;
+  var plan = null;      // { device, storage, colour, term, cover }
+  var pollHandle = null;
+
+  /* --- plan selection ---------------------------------------------------
+   * Didit's callback lands back on a bare checkout.html, so the query string
+   * that carried the device choice is gone by then. Stash it on arrival and
+   * read it back when the params are missing.
+   */
+  function resolvePlan(){
+    var p = new URLSearchParams(location.search);
+    if (p.get('device')) {
+      var picked = {
+        device:  p.get('device'),
+        storage: p.get('storage'),
+        colour:  p.get('colour'),
+        term:    parseInt(p.get('term'), 10),
+        cover:   p.get('cover') === '1',
+      };
+      try { sessionStorage.setItem(PLAN_KEY, JSON.stringify(picked)); } catch (e) {}
+      return picked;
+    }
+    try {
+      var saved = sessionStorage.getItem(PLAN_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) { return null; }
+  }
+
+  function money(n){
+    var r = Math.round(n * 100) / 100;
+    return '$' + r.toLocaleString('en-AU', r % 1 === 0
+      ? { maximumFractionDigits: 0 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function show(id, msg){
+    var el = document.getElementById(id);
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
+  }
+
+  function noPlan(){
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('checkout').style.display = 'block';
+    document.getElementById('checkout').innerHTML =
+      '<h1 class="page-title">No plan selected</h1>' +
+      '<p class="lede">Choose a device first and we’ll bring you straight back here.</p>' +
+      '<a href="catalog.html" class="action-btn" style="display:inline-block; width:auto; padding:14px 28px; text-decoration:none;">Browse devices</a>';
+  }
+
+  async function renderPlan(){
+    var res = await Talaks.client.from('devices').select('*')
+      .eq('id', plan.device).not('terms', 'is', null).maybeSingle();
+    var row = res.data;
+    if (!row) { noPlan(); return false; }
+
+    var storage = row.storages.find(function(s){ return s.gb === plan.storage; });
+    var colour = row.colours.find(function(c){ return c.name === plan.colour; });
+    if (!storage || !colour) { noPlan(); return false; }
+
+    var total = storage.rrp * row.terms[plan.term];
+    var monthly = total / plan.term;
+    var carePrice = (row.care_terms && row.care_terms[plan.term] != null)
+      ? Number(row.care_terms[plan.term])
+      : (Number(row.care_monthly) || 0);
+    var coverMonthly = plan.cover ? carePrice : 0;
+
+    var img = document.getElementById('plan-img');
+    img.src = colour.img;
+    img.alt = row.name;
+    img.onerror = function(){ this.onerror = null; this.src = PLACEHOLDER_IMG; };
+
+    document.getElementById('plan-name').textContent = row.name;
+    document.getElementById('plan-detail').textContent = plan.storage + ' — ' + plan.colour;
+    document.getElementById('sum-device').textContent = row.name;
+    document.getElementById('sum-spec').textContent = plan.storage + ' / ' + plan.colour;
+    document.getElementById('sum-term').textContent = plan.term + ' months' + (plan.cover ? ' + Damage Cover' : '');
+    document.getElementById('sum-total').textContent = money(total + coverMonthly * plan.term);
+    document.getElementById('sum-monthly').textContent = money(monthly + coverMonthly) + '/mo';
+    return true;
+  }
+
+  /* --- step state ------------------------------------------------------- */
+
+  function setRail(step, state){
+    var el = document.getElementById('rail-' + step);
+    el.className = 'rail-step' + (state ? ' ' + state : '');
+  }
+
+  function unlockIdentity(){
+    document.getElementById('card-identity').classList.remove('locked');
+    document.getElementById('num-2').classList.remove('idle');
+    document.getElementById('btn-verify').disabled = false;
+    var pill = document.getElementById('didit-status');
+    if (pill.textContent === 'Locked') { pill.textContent = 'Not started'; }
+    setRail(2, 'active');
+  }
+
+  function markVerified(){
+    var pill = document.getElementById('didit-status');
+    pill.className = 'status-pill done';
+    pill.textContent = 'Verified';
+    var btn = document.getElementById('btn-verify');
+    btn.textContent = 'Identity verified';
+    btn.disabled = true;
+    setRail(2, 'done');
+
+    document.getElementById('card-payment').classList.remove('locked');
+    document.getElementById('num-3').classList.remove('idle');
+    var payPill = document.getElementById('pay-status');
+    payPill.className = 'status-pill working';
+    payPill.textContent = 'Coming soon';
+    setRail(3, 'active');
+  }
+
+  /* --- step 1: delivery -------------------------------------------------- */
+
+  var PROFILE_FIELDS = ['full_name', 'phone', 'address_line', 'suburb', 'state', 'postcode'];
+
+  function profileComplete(p){
+    return !!p && PROFILE_FIELDS.every(function(f){ return p[f] && String(p[f]).trim(); });
+  }
+
+  function fillDeliveryForm(p){
+    if (!p) return;
+    document.getElementById('d-name').value     = p.full_name || '';
+    document.getElementById('d-phone').value    = p.phone || '';
+    document.getElementById('d-address').value  = p.address_line || '';
+    document.getElementById('d-suburb').value   = p.suburb || '';
+    document.getElementById('d-state').value    = p.state || '';
+    document.getElementById('d-postcode').value = p.postcode || '';
+  }
+
+  function collapseDelivery(p){
+    document.getElementById('recap-lines').innerHTML =
+      '<b>' + p.full_name + '</b><br>' +
+      p.address_line + '<br>' +
+      p.suburb + ' ' + p.state + ' ' + p.postcode + '<br>' +
+      p.phone;
+    document.getElementById('delivery-form').style.display = 'none';
+    document.getElementById('delivery-recap').style.display = 'block';
+    var pill = document.getElementById('delivery-status');
+    pill.className = 'status-pill done';
+    pill.textContent = 'Saved';
+    setRail(1, 'done');
+  }
+
+  function editDelivery(){
+    document.getElementById('delivery-form').style.display = 'block';
+    document.getElementById('delivery-recap').style.display = 'none';
+    var pill = document.getElementById('delivery-status');
+    pill.className = 'status-pill working';
+    pill.textContent = 'Editing';
+    setRail(1, 'active');
+  }
+
+  async function saveDelivery(){
+    show('d-error', '');
+    var fields = {
+      full_name:    document.getElementById('d-name').value.trim(),
+      phone:        document.getElementById('d-phone').value.trim(),
+      address_line: document.getElementById('d-address').value.trim(),
+      suburb:       document.getElementById('d-suburb').value.trim(),
+      state:        document.getElementById('d-state').value,
+      postcode:     document.getElementById('d-postcode').value.trim(),
+    };
+
+    var missing = PROFILE_FIELDS.filter(function(f){ return !fields[f]; });
+    if (missing.length) { show('d-error', 'Please fill in every field — we need all of it to ship your device.'); return; }
+    if (!/^\d{4}$/.test(fields.postcode)) { show('d-error', 'An Australian postcode is four digits.'); return; }
+
+    var btn = document.getElementById('d-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    var { error } = await Talaks.saveProfile(user.id, fields);
+    btn.disabled = false; btn.textContent = 'Save and continue';
+
+    if (error) { show('d-error', error.message); return; }
+
+    collapseDelivery(fields);
+    unlockIdentity();
+  }
+
+  /* --- step 2: identity -------------------------------------------------- */
+
+  async function startVerification(){
+    show('v-error', '');
+    var session = await Talaks.getSession();
+    if (!session) { location.href = Talaks.signInUrl(Talaks.currentPageAsNext()); return; }
+
+    var btn = document.getElementById('btn-verify');
+    btn.disabled = true; btn.textContent = 'Starting…';
+    var pill = document.getElementById('didit-status');
+    pill.className = 'status-pill working';
+    pill.textContent = 'Starting…';
+
+    try {
+      var res = await fetch(Talaks.url + '/functions/v1/create-verification', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + session.access_token,
+          'apikey': Talaks.anonKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          callback: location.origin + location.pathname + location.search,
+        }),
+      });
+      var body = await res.json();
+
+      if (!res.ok) {
+        btn.disabled = false; btn.textContent = 'Start identity verification';
+        pill.className = 'status-pill pending'; pill.textContent = 'Not started';
+        show('v-error', body.error || 'Could not start verification. Please try again.');
+        return;
+      }
+
+      try { localStorage.setItem(VERIFY_KEY, body.session_id); } catch (e) {}
+      location.href = body.url;
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Start identity verification';
+      pill.className = 'status-pill pending'; pill.textContent = 'Not started';
+      show('v-error', 'Could not reach the server. Check your connection and try again.');
+    }
+  }
+
+  var STATUS_LABELS = {
+    'Approved': 'Verified', 'Declined': 'Declined',
+    'In Review': 'In review', 'In Progress': 'In progress', 'Not Started': 'Not started',
+  };
+
+  function pollVerification(sessionId){
+    var pill = document.getElementById('didit-status');
+    pill.className = 'status-pill working';
+    pill.textContent = 'Checking…';
+    var btn = document.getElementById('btn-verify');
+    btn.disabled = true; btn.textContent = 'Checking your verification…';
+
+    var tries = 0;
+    pollHandle = setInterval(async function(){
+      tries++;
+      var res = await Talaks.client.from('verifications')
+        .select('status').eq('session_id', sessionId).maybeSingle();
+
+      if (res.data && res.data.status) {
+        var status = res.data.status;
+        if (status === 'Approved') {
+          clearInterval(pollHandle);
+          try { localStorage.removeItem(VERIFY_KEY); } catch (e) {}
+          markVerified();
+          return;
+        }
+        if (status === 'Declined') {
+          clearInterval(pollHandle);
+          try { localStorage.removeItem(VERIFY_KEY); } catch (e) {}
+          pill.className = 'status-pill failed';
+          pill.textContent = 'Declined';
+          btn.textContent = 'Verification declined';
+          show('v-error', 'Your verification was declined. Email info@talaks.com if you think that’s wrong.');
+          return;
+        }
+        pill.textContent = STATUS_LABELS[status] || status;
+      }
+
+      if (tries > 60) { // ~3 minutes
+        clearInterval(pollHandle);
+        pill.className = 'status-pill pending';
+        pill.textContent = 'Still processing';
+        btn.disabled = false;
+        btn.textContent = 'Start identity verification';
+        show('v-error', 'This is taking longer than usual. Refresh in a minute to check again.');
+      }
+    }, 3000);
+  }
+
+  /* --- boot -------------------------------------------------------------- */
+
+  (async function init(){
+    // Unauthenticated visitors go to sign-in and come straight back here,
+    // device selection and all.
+    var session = await Talaks.requireAuth();
+    if (!session) return;
+    user = session.user;
+
+    plan = resolvePlan();
+    if (!plan || !plan.device) { noPlan(); return; }
+
+    var ok = await renderPlan();
+    if (!ok) return;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('checkout').style.display = 'block';
+
+    var results = await Promise.all([
+      Talaks.getProfile(user.id),
+      Talaks.latestVerification(user.id),
+    ]);
+    var profile = results[0];
+    var verification = results[1];
+
+    fillDeliveryForm(profile);
+    if (!profile && user.user_metadata && user.user_metadata.full_name) {
+      document.getElementById('d-name').value = user.user_metadata.full_name;
+    }
+
+    if (profileComplete(profile)) {
+      collapseDelivery(profile);
+      unlockIdentity();
+    }
+
+    // Already verified from an earlier attempt — don't make them do it twice.
+    if (verification && verification.status === 'Approved') {
+      unlockIdentity();
+      markVerified();
+      try { localStorage.removeItem(VERIFY_KEY); } catch (e) {}
+      return;
+    }
+
+    // Mid-flight verification: either we just came back from Didit, or the
+    // page was reloaded while one was in progress.
+    var pending = null;
+    try { pending = localStorage.getItem(VERIFY_KEY); } catch (e) {}
+    if (!pending && verification && verification.status !== 'Declined') {
+      pending = verification.session_id;
+    }
+    if (pending && profileComplete(profile)) {
+      unlockIdentity();
+      pollVerification(pending);
+    }
+  })();
+</script>
+
+</body>
+</html>
