@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talaks — Choose your device</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,440;9..144,560&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --paper:#FFFFFF; --paper-warm:#FBF8F3; --peach:#FFEEE3; --mint:#E7F6EF;
+    --ink:#161A20; --ink-dim:#5B6472; --ink-faint:#8B93A1;
+    --line: rgba(22,26,32,0.10); --line-strong: rgba(22,26,32,0.18);
+    --brand:#FF5A36; --brand-deep:#E8471F; --brand-ink:#FFFFFF; --teal:#1E9E82;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); line-height:1.5; -webkit-font-smoothing:antialiased; }
+  .wrap{max-width:1160px; margin:0 auto; padding:0 28px;}
+  @media (max-width:640px){ .wrap{padding:0 20px;} }
+
+  nav{ position:sticky; top:0; z-index:50; background:rgba(255,255,255,0.92); backdrop-filter: blur(8px); border-bottom:1px solid var(--line); }
+  nav .row{ display:flex; align-items:center; justify-content:space-between; padding:18px 0; }
+  .brand{ font-family:var(--serif); font-size:22px; font-weight:640; text-decoration:none; color:var(--ink); }
+  .brand:visited, .brand:link, .brand:hover{ color:var(--ink); }
+  .brand span{color:var(--brand);}
+  .navlinks{display:flex; gap:32px; font-size:15px;}
+  .navlinks a{color:var(--ink-dim); text-decoration:none;}
+  .navlinks a:hover{color:var(--ink);}
+  @media (max-width:760px){ .navlinks{display:none;} }
+
+  .crumb{ padding:22px 0 0; font-size:13px; color:var(--ink-faint); }
+  .crumb a{color:inherit; text-decoration:none; cursor:pointer;}
+  .crumb a:hover{color:var(--ink);}
+
+  .head{ padding:28px 0 44px; max-width:52ch; }
+  .head h1{ font-family:var(--serif); font-weight:440; font-size:clamp(28px,3.4vw,42px); margin:0 0 10px; letter-spacing:-0.01em; }
+  .head p{ font-size:15px; color:var(--ink-dim); margin:0; line-height:1.6; }
+
+  /* -------- brand step -------- */
+  .brand-grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; padding-bottom:100px; }
+  @media (max-width:700px){ .brand-grid{grid-template-columns:1fr;} }
+  .brand-card{
+    position:relative; border:1px solid var(--line); border-radius:22px; padding:44px 36px;
+    cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:14px; overflow:hidden;
+    transition:border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .brand-card:hover{ border-color:var(--brand); transform:translateY(-3px); box-shadow:0 20px 40px rgba(22,26,32,0.08); }
+  .brand-card.apple{ background:linear-gradient(160deg, var(--peach) 0%, var(--paper) 70%); }
+  .brand-card.samsung{ background:linear-gradient(160deg, var(--mint) 0%, var(--paper) 70%); }
+  .brand-card .bn{ font-family:var(--serif); font-size:28px; font-weight:500; letter-spacing:-0.01em; }
+  .brand-card .bd{ font-size:14px; color:var(--ink-dim); max-width:32ch; }
+  .brand-card .bc{ font-size:13px; color:var(--ink-faint); margin-top:auto; }
+  .brand-card .arrow{ position:absolute; top:36px; right:36px; font-family:var(--serif); font-size:22px; color:var(--brand); }
+
+  /* -------- model step -------- */
+  .model-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding-bottom:100px; }
+  @media (max-width:900px){ .model-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:560px){ .model-grid{grid-template-columns:1fr;} }
+  .model-card{
+    border:1px solid var(--line); border-radius:18px; background:var(--paper); text-decoration:none; color:var(--ink);
+    display:block; cursor:pointer; overflow:hidden; transition:border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .model-card:hover{ border-color:var(--brand); transform:translateY(-3px); box-shadow:0 16px 32px rgba(22,26,32,0.08); }
+  .model-card .thumb{ background:var(--paper-warm); padding:22px; display:flex; align-items:center; justify-content:center; }
+  .model-card .thumb img{ width:100%; height:150px; object-fit:contain; }
+  .model-card .mi{ padding:20px 22px 24px; }
+  .model-card .mn{ font-size:16px; font-weight:600; margin-bottom:4px; }
+  .model-card .ms{ font-size:13px; color:var(--ink-dim); margin-bottom:10px; line-height:1.5; }
+  .model-card .mp{ font-size:13.5px; color:var(--brand-deep); font-weight:600; }
+
+  .empty-note{ color:var(--ink-faint); font-size:14px; padding:60px 0; text-align:center; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap row">
+    <a href="index.html" class="brand">Tal<span>a</span>ks</a>
+    <div class="navlinks">
+      <a href="catalog.html">Devices</a>
+      <a href="index.html#how">How it works</a>
+      <a href="index.html#faq">FAQ</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="crumb" id="crumb"><a id="crumb-devices" href="catalog.html">Devices</a></div>
+
+  <!-- STEP 1: brand -->
+  <div id="step-brand">
+    <div class="head">
+      <h1>Which flagship do you want?</h1>
+      <p>Pick a brand, then choose your model. Every device here is priced under retail, on a fixed monthly plan.</p>
+    </div>
+    <div class="brand-grid">
+      <button class="brand-card apple" data-brand="Apple">
+        <span class="arrow">→</span>
+        <span class="bn">Apple</span>
+        <span class="bd">iPhone 17, iPhone 18 Pro, iPhone 18 Pro Max, iPhone Duo.</span>
+        <span class="bc" id="apple-count"></span>
+      </button>
+      <button class="brand-card samsung" data-brand="Samsung">
+        <span class="arrow">→</span>
+        <span class="bn">Samsung</span>
+        <span class="bd">Galaxy S26, Galaxy S26 Plus, Galaxy S26 Ultra.</span>
+        <span class="bc" id="samsung-count"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2: models for chosen brand -->
+  <div id="step-models" style="display:none;">
+    <div class="head">
+      <h1 id="model-head">Apple</h1>
+      <p id="model-sub">Pick a model to see storage, colours and monthly pricing.</p>
+    </div>
+    <div class="model-grid" id="model-grid"></div>
+  </div>
+</div>
+
+<script>
+  const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><rect width="240" height="240" fill="#FBF8F3"/><text x="50%" y="50%" font-family="sans-serif" font-size="13" fill="#8B93A1" text-anchor="middle" dominant-baseline="middle">Photo coming soon</text></svg>'
+  );
+
+  const supabaseClient = supabase.createClient(
+    'https://asajwviusixmnoolawnb.supabase.co',
+    'sb_publishable__KTvqClMNFPO2ZHkueUJmA_101Fl1_D'
+  );
+
+  function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
+
+  const stepBrand = document.getElementById('step-brand');
+  const stepModels = document.getElementById('step-models');
+  const crumb = document.getElementById('crumb');
+
+  let DEVICES = [];
+
+  supabaseClient
+    .from('devices')
+    .select('*')
+    .not('terms', 'is', null)
+    .then(({ data, error }) => {
+      if (error || !data) { console.error(error); return; }
+      DEVICES = data;
+
+      const appleCount = data.filter(d => d.brand === 'Apple').length;
+      const samsungCount = data.filter(d => d.brand === 'Samsung').length;
+      document.getElementById('apple-count').textContent = appleCount + (appleCount === 1 ? ' model available' : ' models available');
+      document.getElementById('samsung-count').textContent = samsungCount + (samsungCount === 1 ? ' model available' : ' models available');
+
+      // Deep link support: catalog.html?brand=Samsung jumps straight to step 2
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedBrand = urlParams.get('brand');
+      if (requestedBrand && data.some(d => d.brand === requestedBrand)) {
+        showModels(requestedBrand);
+      }
+    });
+
+  document.querySelectorAll('[data-brand]').forEach(card => {
+    card.onclick = () => showModels(card.dataset.brand);
+  });
+
+  function showModels(brand){
+    stepBrand.style.display = 'none';
+    stepModels.style.display = '';
+    document.getElementById('model-head').textContent = brand;
+    crumb.innerHTML = '<a id="crumb-devices" href="catalog.html">Devices</a> &nbsp;/&nbsp; <a id="crumb-brand" href="javascript:void(0)">' + brand + '</a>';
+    document.getElementById('crumb-devices').onclick = (e) => { e.preventDefault(); backToBrands(); };
+
+    const models = DEVICES.filter(d => d.brand === brand);
+    const grid = document.getElementById('model-grid');
+    grid.innerHTML = '';
+
+    if (models.length === 0){
+      grid.innerHTML = '<div class="empty-note">No ' + brand + ' devices available right now.</div>';
+      return;
+    }
+
+    models.forEach(d => {
+      const cheapestStorage = d.storages[0];
+      const cheapest = Math.min(
+        ...Object.entries(d.terms).map(([months, pct]) => (cheapestStorage.rrp * pct) / Number(months))
+      );
+      const a = document.createElement('a');
+      a.className = 'model-card';
+      a.href = 'product.html?device=' + d.id;
+      a.innerHTML =
+        '<div class="thumb"><img src="' + d.colours[0].img + '" alt="' + d.name + '" onerror="this.onerror=null;this.src=\'' + PLACEHOLDER_IMG + '\'"></div>' +
+        '<div class="mi">' +
+          '<div class="mn">' + d.name + '</div>' +
+          '<div class="ms">' + (d.sub || '').split('.')[0] + '.</div>' +
+          '<div class="mp">From ' + money(cheapest) + '/mo</div>' +
+        '</div>';
+      grid.appendChild(a);
+    });
+  }
+
+  function backToBrands(){
+    stepModels.style.display = 'none';
+    stepBrand.style.display = '';
+    crumb.innerHTML = '<a id="crumb-devices" href="catalog.html">Devices</a>';
+    history.replaceState(null, '', 'catalog.html');
+  }
+</script>
+
+</body>
+</html>
