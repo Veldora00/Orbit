@@ -4,69 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Talaks — Choose your device</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,440;9..144,560&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
-    --ink:#10161F;
-    --ink-soft:#1B2431;
-    --ink-line: rgba(244,242,236,0.14);
-    --paper:#F4F2EC;
-    --paper-dim: rgba(244,242,236,0.6);
-    --paper-faint: rgba(244,242,236,0.4);
-    --amber:#D98E3F;
-    --teal:#3F8F82;
-    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
-    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --paper:#FFFFFF; --paper-warm:#FBF8F3; --peach:#FFEEE3; --mint:#E7F6EF;
+    --ink:#161A20; --ink-dim:#5B6472; --ink-faint:#8B93A1;
+    --line: rgba(22,26,32,0.10); --line-strong: rgba(22,26,32,0.18);
+    --brand:#FF5A36; --brand-deep:#E8471F; --brand-ink:#FFFFFF; --teal:#1E9E82;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
   *{box-sizing:border-box;}
   body{
-    margin:0;
-    background:var(--ink);
-    color:var(--paper);
-    font-family:var(--sans);
-    line-height:1.5;
-    -webkit-font-smoothing:antialiased;
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);
+    line-height:1.5; -webkit-font-smoothing:antialiased;
   }
   .wrap{max-width:1160px; margin:0 auto; padding:0 28px;}
   @media (max-width:640px){ .wrap{padding:0 20px;} }
 
-  /* ---------- NAV ---------- */
   nav{
     position:sticky; top:0; z-index:50;
-    background:rgba(16,22,31,0.94);
-    backdrop-filter: blur(8px);
-    border-bottom:1px solid var(--ink-line);
+    background:rgba(255,255,255,0.92); backdrop-filter: blur(8px);
+    border-bottom:1px solid var(--line);
   }
   nav .row{ display:flex; align-items:center; justify-content:space-between; padding:18px 0; }
-  .brand{ font-family:var(--serif); font-size:22px; font-weight:700; text-decoration:none; color:var(--paper); }
-  .brand:visited, .brand:link, .brand:hover{ color:var(--paper); }
-  .brand span{color:var(--amber);}
+  .brand{ font-family:var(--serif); font-size:22px; font-weight:640; text-decoration:none; color:var(--ink); }
+  .brand:visited, .brand:link, .brand:hover{ color:var(--ink); }
+  .brand span{color:var(--brand);}
   .navlinks{display:flex; gap:32px; font-size:15px;}
-  .navlinks a{color:inherit; text-decoration:none; opacity:0.85;}
+  .navlinks a{color:var(--ink-dim); text-decoration:none;}
+  .navlinks a:hover{color:var(--ink);}
   @media (max-width:760px){ .navlinks{display:none;} }
 
-  /* ---------- BREADCRUMB ---------- */
-  .crumb{ padding:22px 0 0; font-size:13px; opacity:0.55; }
+  .crumb{ padding:22px 0 0; font-size:13px; color:var(--ink-faint); }
   .crumb a{color:inherit; text-decoration:none;}
-  .crumb a:hover{opacity:0.8;}
+  .crumb a:hover{color:var(--ink);}
 
-  /* ---------- PRODUCT LAYOUT ---------- */
   .product{ padding:36px 0 100px; display:grid; grid-template-columns:64px 1fr 1fr; gap:40px; align-items:start; }
   @media (max-width:900px){ .product{grid-template-columns:1fr; } }
 
-  /* thumb rail */
   .thumbrail{ display:flex; flex-direction:column; gap:10px; }
   @media (max-width:900px){ .thumbrail{ flex-direction:row; order:2; } }
   .thumb{
-    width:64px; height:64px; border:1px solid var(--ink-line); background:var(--ink-soft);
+    width:64px; height:64px; border:1px solid var(--line); border-radius:10px; background:var(--paper-warm);
     cursor:pointer; padding:8px; display:flex; align-items:center; justify-content:center;
   }
-  .thumb.active{ border-color:var(--amber); }
+  .thumb.active{ border-color:var(--brand); }
   .thumb img{ width:100%; height:100%; object-fit:contain; }
 
-  /* main stage */
   .stage{
     order:0;
-    background:var(--ink-soft); border:1px solid var(--ink-line);
+    background:var(--paper-warm); border:1px solid var(--line); border-radius:20px;
     min-height:520px; display:flex; align-items:center; justify-content:center; padding:40px;
     position:relative;
   }
@@ -74,88 +65,86 @@
   .stage img{ max-width:100%; max-height:460px; object-fit:contain; }
   .stage-badge{
     position:absolute; top:20px; left:20px; font-size:12px; letter-spacing:0.3px;
-    color:var(--ink); background:var(--teal); padding:5px 12px;
+    color:var(--brand-ink); background:var(--teal); padding:5px 12px; border-radius:999px;
   }
 
-  /* info column */
   .info{ order:2; }
   @media (max-width:900px){ .info{order:3;} }
-  .rating{ display:flex; align-items:center; gap:10px; font-size:13px; opacity:0.7; margin-bottom:18px; }
-  .stars{ color:var(--amber); letter-spacing:1px; }
+  .rating{ display:flex; align-items:center; gap:10px; font-size:13px; color:var(--ink-dim); margin-bottom:18px; }
+  .stars{ color:var(--brand); letter-spacing:1px; }
 
-  h1{ font-family:var(--serif); font-weight:400; font-size:36px; margin:0 0 8px; }
-  .subtitle{ font-size:14.5px; opacity:0.68; margin:0 0 28px; max-width:46ch; line-height:1.6; }
+  h1{ font-family:var(--serif); font-weight:440; font-size:36px; margin:0 0 8px; letter-spacing:-0.01em; }
+  .subtitle{ font-size:14.5px; color:var(--ink-dim); margin:0 0 28px; max-width:46ch; line-height:1.6; }
 
   .field{ margin-bottom:26px; }
-  .field-label{ font-size:13px; text-transform:none; opacity:0.65; margin-bottom:10px; display:flex; justify-content:space-between; }
-  .field-label b{ color:var(--paper); opacity:1; font-weight:600; }
+  .field-label{ font-size:13px; color:var(--ink-dim); margin-bottom:10px; display:flex; justify-content:space-between; }
+  .field-label b{ color:var(--brand); font-weight:600; }
 
   .pillrow{ display:flex; gap:10px; flex-wrap:wrap; }
   .pill{
-    border:1px solid var(--ink-line); background:transparent; color:var(--paper);
+    border:1px solid var(--line-strong); border-radius:999px; background:var(--paper); color:var(--ink);
     padding:11px 18px; font-size:14px; cursor:pointer; font-family:inherit;
   }
-  .pill:hover{ border-color:rgba(244,242,236,0.35); }
-  .pill.active{ border-color:var(--amber); color:var(--amber); }
+  .pill:hover{ border-color:var(--ink-faint); }
+  .pill.active{ border-color:var(--brand); background:var(--peach); color:var(--brand-deep); }
 
   .swatchrow{ display:flex; gap:10px; flex-wrap:wrap; }
   .swatch{
-    width:56px; height:56px; border:1px solid var(--ink-line); background:var(--ink-soft);
+    width:56px; height:56px; border:1px solid var(--line); border-radius:12px; background:var(--paper-warm);
     cursor:pointer; padding:6px; display:flex; align-items:center; justify-content:center;
   }
   .swatch img{ width:100%; height:100%; object-fit:contain; }
-  .swatch.active{ border-color:var(--amber); }
+  .swatch.active{ border-color:var(--brand); }
 
   .term-pill{
-    border:1px solid var(--ink-line); background:transparent; color:var(--paper);
+    border:1px solid var(--line-strong); border-radius:14px; background:var(--paper); color:var(--ink);
     padding:14px 18px; font-size:14px; cursor:pointer; font-family:inherit;
     display:flex; justify-content:space-between; align-items:center; width:100%;
     margin-bottom:8px;
   }
   .term-pill .t{ display:flex; align-items:center; gap:10px; }
-  .term-pill .tag{ font-size:11px; color:var(--ink); background:var(--teal); padding:3px 8px; }
+  .term-pill .tag{ font-size:11px; color:var(--brand-ink); background:var(--teal); padding:3px 8px; border-radius:999px; }
   .term-pill .price{ font-family:var(--serif); font-size:17px; }
-  .term-pill .price small{ font-size:12px; opacity:0.6; font-family:var(--sans); }
-  .term-pill.active{ border-color:var(--amber); }
-  .term-pill.active .price{ color:var(--amber); }
+  .term-pill .price small{ font-size:12px; color:var(--ink-faint); font-family:var(--sans); }
+  .term-pill.active{ border-color:var(--brand); background:var(--peach); }
+  .term-pill.active .price{ color:var(--brand-deep); }
 
   .cover-toggle{
-    display:flex; align-items:flex-start; gap:12px; border:1px solid var(--ink-line);
-    padding:14px 16px; cursor:pointer; font-size:13px; opacity:0.85; line-height:1.5;
+    display:flex; align-items:flex-start; gap:12px; border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px; cursor:pointer; font-size:13px; color:var(--ink-dim); line-height:1.5;
   }
-  .cover-toggle:hover{ border-color:rgba(244,242,236,0.35); }
-  .cover-toggle input{ margin-top:3px; accent-color:var(--amber); flex-shrink:0; }
-  .field-label b{ color:var(--amber); opacity:1; font-weight:600; }
+  .cover-toggle:hover{ border-color:var(--ink-faint); }
+  .cover-toggle input{ margin-top:3px; accent-color:var(--brand); flex-shrink:0; }
 
   .summary{
-    border:1px solid var(--ink-line); padding:20px; margin:26px 0 20px; font-size:13.5px;
+    border:1px solid var(--line); border-radius:14px; padding:20px; margin:26px 0 20px; font-size:13.5px; background:var(--paper-warm);
   }
-  .summary-row{ display:flex; justify-content:space-between; padding:8px 0; opacity:0.85; }
-  .summary-row:not(:last-child){ border-bottom:1px solid var(--ink-line); }
-  .summary-row b{ color:var(--paper); opacity:1; }
+  .summary-row{ display:flex; justify-content:space-between; padding:8px 0; color:var(--ink-dim); }
+  .summary-row:not(:last-child){ border-bottom:1px solid var(--line); }
+  .summary-row b{ color:var(--ink); }
 
   .cta{
-    width:100%; background:var(--amber); color:var(--ink); border:1px solid var(--amber);
+    width:100%; background:var(--brand); color:var(--brand-ink); border:none; border-radius:999px;
     padding:16px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit;
     display:flex; justify-content:space-between; align-items:center; padding-left:22px; padding-right:22px;
+    transition:background 0.15s;
   }
+  .cta:hover{ background:var(--brand-deep); }
 
-  .microcopy{ font-size:12.5px; opacity:0.5; margin-top:14px; line-height:1.6; }
+  .microcopy{ font-size:12.5px; color:var(--ink-faint); margin-top:14px; line-height:1.6; }
 
-  /* device switcher (extra: lets you swap the whole model, since screenshots showed multiple devices) */
   .device-switch{ padding:40px 0 0; }
-  .device-switch h2{ font-family:var(--serif); font-weight:400; font-size:22px; margin:0 0 18px; }
+  .device-switch h2{ font-family:var(--serif); font-weight:440; font-size:22px; margin:0 0 18px; }
   .device-rail{ display:flex; gap:12px; overflow-x:auto; padding-bottom:10px; }
   .device-card{
-    flex:0 0 150px; border:1px solid var(--ink-line); background:var(--ink-soft);
+    flex:0 0 150px; border:1px solid var(--line); border-radius:14px; background:var(--paper-warm);
     padding:16px 14px; cursor:pointer; text-align:left;
   }
-  .device-card.active{ border-color:var(--amber); }
+  .device-card.active{ border-color:var(--brand); }
   .device-card img{ width:100%; height:90px; object-fit:contain; margin-bottom:10px; }
   .device-card .dn{ font-size:13.5px; font-weight:600; margin-bottom:2px; }
-  .device-card .dp{ font-size:12px; opacity:0.6; }
+  .device-card .dp{ font-size:12px; color:var(--ink-faint); }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -232,20 +221,18 @@
 </div>
 
 <script>
-  // ---------------- DEVICE CATALOGUE ----------------
-  // RRP figures are approximate current AU launch pricing for the base storage tier,
-  // Device/pricing data now lives in data/devices.json — a single shared
-  // file both this page and checkout.html load, instead of duplicating the
-  // catalogue in every page's code. Edit that file to update pricing.
+  const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#FBF8F3"/><text x="50%" y="50%" font-family="sans-serif" font-size="15" fill="#8B93A1" text-anchor="middle" dominant-baseline="middle">Photo coming soon</text></svg>'
+  );
+
   const TERM_META = {
     12: { label:'12 months', note:'Fastest device turnover' },
     24: { label:'24 months', note:'Most popular', recommended:true },
     36: { label:'36 months', note:'Lowest monthly price' },
   };
 
-  // Device/pricing data lives in Supabase now (table: devices) instead of a
-  // static JSON file — this is what makes the admin panel possible: edits
-  // made there show up here immediately, no file to re-upload.
+  // Device/pricing data lives in Supabase (table: devices) — the admin panel
+  // writes here and every page reads live, no redeploy needed.
   const supabaseClient = supabase.createClient(
     'https://asajwviusixmnoolawnb.supabase.co',
     'sb_publishable__KTvqClMNFPO2ZHkueUJmA_101Fl1_D'
@@ -260,14 +247,13 @@
   supabaseClient
     .from('devices')
     .select('*')
-    .not('terms', 'is', null)   // only devices with confirmed real pricing
+    .not('terms', 'is', null)
     .then(({ data, error }) => {
       if (error || !data || data.length === 0) {
         document.querySelector('.wrap').innerHTML = '<p style="padding:60px 0;">Couldn\'t load device data from Supabase.</p>';
         console.error(error);
         return;
       }
-      // Map Supabase's snake_case columns to the shape the rest of this page expects
       DEVICES = data.map(d => ({
         id: d.id, brand: d.brand, name: d.name, sub: d.sub,
         careMonthly: d.care_monthly, coverDesc: d.cover_desc,
@@ -300,6 +286,7 @@
     document.getElementById('p-sub').textContent = device.sub;
     document.getElementById('stage-img').src = colour.img;
     document.getElementById('stage-img').alt = device.name + ' in ' + colour.name;
+    document.getElementById('stage-img').onerror = function(){ this.onerror=null; this.src = PLACEHOLDER_IMG; };
     document.getElementById('colour-name').textContent = colour.name;
     document.getElementById('sum-total').textContent = money(total) + (state.cover ? ' + ' + money(coverMonthly * months) + ' cover' : '') + ' over term';
     document.getElementById('sum-cover').textContent = state.cover ? money(device.careMonthly) + '/mo added' : 'Not added';
@@ -322,18 +309,16 @@
       window.location.href = 'checkout.html?' + params.toString();
     };
 
-    // thumbrail = same colour set, small icons
     const thumbrail = document.getElementById('thumbrail');
     thumbrail.innerHTML = '';
     device.colours.forEach((c, i) => {
       const t = document.createElement('div');
       t.className = 'thumb' + (i === state.colourIdx ? ' active' : '');
-      t.innerHTML = '<img src="' + c.img + '" alt="' + c.name + '">';
+      t.innerHTML = '<img src="' + c.img + '" alt="' + c.name + '" onerror="this.onerror=null;this.src=\'' + PLACEHOLDER_IMG + '\'">';
       t.onclick = () => { state.colourIdx = i; render(); };
       thumbrail.appendChild(t);
     });
 
-    // storage pills
     const storageRow = document.getElementById('storage-row');
     storageRow.innerHTML = '';
     device.storages.forEach((s, i) => {
@@ -344,18 +329,16 @@
       storageRow.appendChild(p);
     });
 
-    // colour swatches
     const colourRow = document.getElementById('colour-row');
     colourRow.innerHTML = '';
     device.colours.forEach((c, i) => {
       const s = document.createElement('div');
       s.className = 'swatch' + (i === state.colourIdx ? ' active' : '');
-      s.innerHTML = '<img src="' + c.img + '" alt="' + c.name + '">';
+      s.innerHTML = '<img src="' + c.img + '" alt="' + c.name + '" onerror="this.onerror=null;this.src=\'' + PLACEHOLDER_IMG + '\'">';
       s.onclick = () => { state.colourIdx = i; render(); };
       colourRow.appendChild(s);
     });
 
-    // term rows — only the terms this device actually offers
     const termRows = document.getElementById('term-rows');
     termRows.innerHTML = '';
     deviceTermMonths.forEach(m => {
@@ -372,7 +355,6 @@
       termRows.appendChild(row);
     });
 
-    // device switcher
     const deviceRail = document.getElementById('device-rail');
     deviceRail.innerHTML = '';
     DEVICES.forEach(d => {
@@ -382,7 +364,7 @@
       const cheapTerm = dTerms.includes(24) ? 24 : dTerms[0];
       const cheapest = Math.min(...d.storages.map(s => (s.rrp * d.terms[cheapTerm]) / cheapTerm));
       card.innerHTML =
-        '<img src="' + d.colours[0].img + '" alt="' + d.name + '">' +
+        '<img src="' + d.colours[0].img + '" alt="' + d.name + '" onerror="this.onerror=null;this.src=\'' + PLACEHOLDER_IMG + '\'">' +
         '<div class="dn">' + d.name + '</div>' +
         '<div class="dp">From ' + money(cheapest) + '/mo</div>';
       card.onclick = () => {
