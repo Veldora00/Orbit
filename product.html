@@ -144,6 +144,12 @@
   .device-card img{ width:100%; height:90px; object-fit:contain; margin-bottom:10px; }
   .device-card .dn{ font-size:13.5px; font-weight:600; margin-bottom:2px; }
   .device-card .dp{ font-size:12px; color:var(--ink-faint); }
+
+  .site-foot{ border-top:1px solid var(--line); padding:32px 0; margin-top:40px; }
+  .foot-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--ink-faint); }
+  .foot-links{ display:flex; gap:20px; flex-wrap:wrap; font-size:13.5px; }
+  .foot-links a{ color:var(--ink-dim); text-decoration:none; }
+  .foot-links a:hover{ color:var(--ink); }
 </style>
 </head>
 <body>
@@ -219,6 +225,19 @@
     <div class="device-rail" id="device-rail"></div>
   </div>
 </div>
+
+<footer class="site-foot">
+  <div class="wrap foot-row">
+    <div class="foot-links">
+      <a href="index.html#faq">FAQs</a>
+      <a href="terms.html">Terms of Use</a>
+      <a href="terms.html#damage-cover">Damage Cover &amp; fees</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="mailto:info@talaks.com">info@talaks.com</a>
+    </div>
+    <span>© 2026 Talaks. Sydney, Australia.</span>
+  </div>
+</footer>
 
 <script>
   const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
