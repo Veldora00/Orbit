@@ -164,6 +164,7 @@
     <div class="summary-row"><span>Device</span><b id="sum-device">—</b></div>
     <div class="summary-row"><span>Storage / Colour</span><b id="sum-spec">—</b></div>
     <div class="summary-row"><span>Term</span><b id="sum-term">—</b></div>
+    <div class="summary-row"><span>Damage Cover</span><b>Included</b></div>
     <div class="summary-row"><span>Total over term</span><b id="sum-total">—</b></div>
     <div class="summary-row"><span>Monthly payment</span><b class="summary-total" id="sum-monthly">—</b></div>
   </div>
@@ -194,7 +195,7 @@
   var VERIFY_KEY = 'talaks_verification_session';
 
   var user = null;
-  var plan = null;      // { device, storage, colour, term, cover }
+  var plan = null;      // { device, storage, colour, term }
   var pollHandle = null;
 
   /* --- plan selection ---------------------------------------------------
@@ -210,7 +211,6 @@
         storage: p.get('storage'),
         colour:  p.get('colour'),
         term:    parseInt(p.get('term'), 10),
-        cover:   p.get('cover') === '1',
       };
       try { sessionStorage.setItem(PLAN_KEY, JSON.stringify(picked)); } catch (e) {}
       return picked;
@@ -253,12 +253,10 @@
     var colour = row.colours.find(function(c){ return c.name === plan.colour; });
     if (!storage || !colour) { noPlan(); return false; }
 
-    var total = storage.rrp * row.terms[plan.term];
-    var monthly = total / plan.term;
-    var carePrice = (row.care_terms && row.care_terms[plan.term] != null)
-      ? Number(row.care_terms[plan.term])
-      : (Number(row.care_monthly) || 0);
-    var coverMonthly = plan.cover ? carePrice : 0;
+    // Same rounding as the product page: monthly is the advertised whole-dollar
+    // figure, and the term total is derived from it so the two always agree.
+    var monthly = Math.round(storage.rrp * row.terms[plan.term] / plan.term);
+    var total = monthly * plan.term;
 
     var img = document.getElementById('plan-img');
     img.src = colour.img;
@@ -269,9 +267,9 @@
     document.getElementById('plan-detail').textContent = plan.storage + ' — ' + plan.colour;
     document.getElementById('sum-device').textContent = row.name;
     document.getElementById('sum-spec').textContent = plan.storage + ' / ' + plan.colour;
-    document.getElementById('sum-term').textContent = plan.term + ' months' + (plan.cover ? ' + Damage Cover' : '');
-    document.getElementById('sum-total').textContent = money(total + coverMonthly * plan.term);
-    document.getElementById('sum-monthly').textContent = money(monthly + coverMonthly) + '/mo';
+    document.getElementById('sum-term').textContent = plan.term + ' months';
+    document.getElementById('sum-total').textContent = money(total);
+    document.getElementById('sum-monthly').textContent = money(monthly) + '/mo';
     return true;
   }
 

@@ -119,12 +119,19 @@
   .term-pill.active{ border-color:var(--brand); background:var(--peach); }
   .term-pill.active .price{ color:var(--brand-deep); }
 
-  .cover-toggle{
-    display:flex; align-items:flex-start; gap:12px; border:1px solid var(--line); border-radius:14px;
-    padding:14px 16px; cursor:pointer; font-size:13px; color:var(--ink-dim); line-height:1.5;
+  /* Damage Cover is part of every plan now, so it reads as an inclusion
+     rather than a choice. */
+  .included{
+    display:flex; align-items:flex-start; gap:12px; border:1px solid rgba(30,158,130,0.3);
+    background:var(--mint); border-radius:14px; padding:14px 16px; margin-bottom:26px;
   }
-  .cover-toggle:hover{ border-color:var(--ink-faint); }
-  .cover-toggle input{ margin-top:3px; accent-color:var(--brand); flex-shrink:0; }
+  .included-mark{
+    width:20px; height:20px; border-radius:50%; background:var(--teal); color:var(--brand-ink);
+    font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; margin-top:1px;
+  }
+  .included b{ display:block; font-size:13.5px; color:var(--ink); margin-bottom:3px; }
+  .included span{ font-size:12.5px; color:var(--ink-dim); line-height:1.55; }
+  .included a{ color:var(--brand-deep); }
 
   .summary{
     border:1px solid var(--line); border-radius:14px; padding:20px; margin:26px 0 20px; font-size:13.5px; background:var(--paper-warm);
@@ -211,17 +218,19 @@
         <div id="term-rows"></div>
       </div>
 
-      <div class="field">
-        <div class="field-label"><span>Damage Cover <b id="cover-price"></b></span></div>
-        <label class="cover-toggle" id="cover-toggle">
-          <input type="checkbox" id="cover-checkbox">
-          <span>Unlimited repairs for accidental damage, each subject to a service fee. Includes theft and loss cover.</span>
-        </label>
+      <div class="included">
+        <div class="included-mark">✓</div>
+        <div>
+          <b>Damage Cover is included</b>
+          <span>Accidental damage — cracked screens, water, wear — is covered on every plan,
+          each repair subject to a flat service fee. Loss and theft aren’t covered.
+          <a href="faq.html#damage-cover">See the fee</a>.</span>
+        </div>
       </div>
 
       <div class="summary">
         <div class="summary-row"><span>Total over term</span><b id="sum-total">—</b></div>
-        <div class="summary-row"><span>Damage cover</span><b id="sum-cover">—</b></div>
+        <div class="summary-row"><span>Damage Cover</span><b>Included</b></div>
         <div class="summary-row"><span>Free delivery</span><b>3–5 business days</b></div>
       </div>
 
@@ -262,7 +271,7 @@
   const TERM_META = {
     12: { label:'12 months', note:'Fastest device turnover' },
     24: { label:'24 months', note:'Most popular', recommended:true },
-    36: { label:'36 months', note:'Lowest monthly price' },
+
   };
 
   // Device/pricing data lives in Supabase (table: devices) — the admin panel
@@ -273,10 +282,8 @@
   );
 
   let DEVICES = [];
-  let state = { deviceId: null, storageIdx:0, colourIdx:0, termIdx:24, cover:false };
+  let state = { deviceId: null, storageIdx:0, colourIdx:0, termIdx:24 };
 
-  // Shows cents only when there are cents to show — Damage Cover can be $9.50/mo,
-  // and rounding that up to $10 would misstate the price.
   function money(n){
     const r = Math.round(n * 100) / 100;
     return '$' + r.toLocaleString('en-AU', r % 1 === 0
@@ -285,11 +292,12 @@
   }
   function getDevice(){ return DEVICES.find(d => d.id === state.deviceId); }
 
-  // Damage Cover is priced per term (longer term = cheaper monthly cover).
-  // Falls back to the old single care_monthly value if care_terms isn't set yet.
-  function careFor(device, months){
-    if (device.careTerms && device.careTerms[months] != null) return Number(device.careTerms[months]);
-    return Number(device.careMonthly) || 0;
+  /* Monthly is the advertised figure, so it's a whole dollar. `terms` holds the
+   * share of RRP for the base model, which means larger storage tiers scale
+   * from it — round here and derive the term total from the rounded monthly so
+   * the two never disagree on screen. */
+  function monthlyFor(device, rrp, months){
+    return Math.round(rrp * device.terms[months] / months);
   }
 
   supabaseClient
@@ -304,7 +312,6 @@
       }
       DEVICES = data.map(d => ({
         id: d.id, brand: d.brand, name: d.name, sub: d.sub,
-        careMonthly: d.care_monthly, careTerms: d.care_terms, coverDesc: d.cover_desc,
         terms: d.terms, storages: d.storages, colours: d.colours,
       }));
 
@@ -328,20 +335,16 @@
     const deviceTermMonths = Object.keys(device.terms).map(Number);
     if (!deviceTermMonths.includes(state.termIdx)) state.termIdx = deviceTermMonths[0];
     const months = state.termIdx;
-    const pct = device.terms[months];
-    const total = storage.rrp * pct;
-    const monthly = total / months;
-    const carePrice = careFor(device, months);
-    const coverMonthly = state.cover ? carePrice : 0;
-    const monthlyWithCover = monthly + coverMonthly;
+    const monthly = monthlyFor(device, storage.rrp, months);
+    const total = monthly * months;
 
     // Optional discount: a storage tier can carry rrp_was (the price before the
     // drop). Monthly pricing follows RRP automatically, so we just show what the
     // monthly used to be at the old RRP.
     const rrpWas = Number(storage.rrp_was || 0);
     const onSale = rrpWas > Number(storage.rrp);
-    const wasMonthly = onSale ? (rrpWas * pct) / months : 0;
-    const wasTotal   = onSale ? rrpWas * pct : 0;
+    const wasMonthly = onSale ? monthlyFor(device, rrpWas, months) : 0;
+    const wasTotal   = onSale ? wasMonthly * months : 0;
 
     document.getElementById('crumb-brand').textContent = device.brand;
     document.getElementById('crumb-brand-link').href = 'catalog.html?brand=' + encodeURIComponent(device.brand);
@@ -353,8 +356,7 @@
     document.getElementById('stage-img').onerror = function(){ this.onerror=null; this.src = PLACEHOLDER_IMG; };
     document.getElementById('colour-name').textContent = colour.name;
     document.getElementById('sum-total').innerHTML =
-      (onSale ? '<s>' + money(wasTotal) + '</s>' : '') +
-      money(total) + (state.cover ? ' + ' + money(coverMonthly * months) + ' cover' : '') + ' over term';
+      (onSale ? '<s>' + money(wasTotal) + '</s>' : '') + money(total) + ' over term';
 
     const saveEl = document.getElementById('stage-save');
     const wasEl  = document.getElementById('was-line');
@@ -368,14 +370,7 @@
       saveEl.style.display = 'none';
       wasEl.style.display = 'none';
     }
-    document.getElementById('sum-cover').textContent = state.cover ? money(carePrice) + '/mo added' : 'Not added';
-    document.getElementById('cta-price').textContent = money(monthlyWithCover) + '/mo';
-    document.getElementById('cover-price').textContent = '+' + money(carePrice) + '/mo';
-    document.querySelector('#cover-toggle span').textContent = device.coverDesc;
-
-    const coverCheckbox = document.getElementById('cover-checkbox');
-    coverCheckbox.checked = state.cover;
-    coverCheckbox.onchange = () => { state.cover = coverCheckbox.checked; render(); };
+    document.getElementById('cta-price').textContent = money(monthly) + '/mo';
 
     document.getElementById('cta-button').onclick = () => {
       const params = new URLSearchParams({
@@ -383,7 +378,6 @@
         storage: storage.gb,
         colour: colour.name,
         term: months,
-        cover: state.cover ? '1' : '0'
       });
       window.location.href = 'checkout.html?' + params.toString();
     };
@@ -422,11 +416,8 @@
     termRows.innerHTML = '';
     deviceTermMonths.forEach(m => {
       const meta = TERM_META[m];
-      const p = device.terms[m];
-      const tot = storage.rrp * p;
-      // Cover is priced per term, so when it's on, each term shows its own all-in price
-      const mo = tot / m + (state.cover ? careFor(device, m) : 0);
-      const moWas = onSale ? (rrpWas * p) / m + (state.cover ? careFor(device, m) : 0) : 0;
+      const mo = monthlyFor(device, storage.rrp, m);
+      const moWas = onSale ? monthlyFor(device, rrpWas, m) : 0;
       const row = document.createElement('button');
       row.className = 'term-pill' + (m === months ? ' active' : '');
       row.innerHTML =

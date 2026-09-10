@@ -161,7 +161,9 @@
     const s = d.storages[0];
     const rrp = useWas ? Number(s.rrp_was || 0) : Number(s.rrp);
     if (!rrp) return null;
-    return Math.min(...Object.entries(d.terms).map(([m, pct]) => (rrp * pct) / Number(m)));
+    // Round per term the same way the product page does, so the "from" price
+    // here matches the figure shown once you open the device.
+    return Math.min(...Object.entries(d.terms).map(([m, pct]) => Math.round((rrp * pct) / Number(m))));
   }
 
   const stepBrand  = document.getElementById('step-brand');
