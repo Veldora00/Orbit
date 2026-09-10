@@ -155,6 +155,7 @@
   .device-card .dn{ font-size:13.5px; font-weight:600; margin-bottom:2px; }
   .device-card .dp{ font-size:12px; opacity:0.6; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -242,29 +243,42 @@
     36: { label:'36 months', note:'Lowest monthly price' },
   };
 
+  // Device/pricing data lives in Supabase now (table: devices) instead of a
+  // static JSON file — this is what makes the admin panel possible: edits
+  // made there show up here immediately, no file to re-upload.
+  const supabaseClient = supabase.createClient(
+    'https://asajwviusixmnoolawnb.supabase.co',
+    'sb_publishable__KTvqClMNFPO2ZHkueUJmA_101Fl1_D'
+  );
+
   let DEVICES = [];
   let state = { deviceId: null, storageIdx:0, colourIdx:0, termIdx:24, cover:false };
 
   function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
   function getDevice(){ return DEVICES.find(d => d.id === state.deviceId); }
 
-  fetch('data/devices.json')
-    .then(r => r.json())
-    .then(data => {
-      // Only show devices with confirmed real pricing (terms !== null).
-      // iPhone 16 and iPhone Duo are in the data file but excluded here
-      // until their real monthly pricing sheet is confirmed.
-      DEVICES = data.devices.filter(d => d.terms !== null);
+  supabaseClient
+    .from('devices')
+    .select('*')
+    .not('terms', 'is', null)   // only devices with confirmed real pricing
+    .then(({ data, error }) => {
+      if (error || !data || data.length === 0) {
+        document.querySelector('.wrap').innerHTML = '<p style="padding:60px 0;">Couldn\'t load device data from Supabase.</p>';
+        console.error(error);
+        return;
+      }
+      // Map Supabase's snake_case columns to the shape the rest of this page expects
+      DEVICES = data.map(d => ({
+        id: d.id, brand: d.brand, name: d.name, sub: d.sub,
+        careMonthly: d.care_monthly, coverDesc: d.cover_desc,
+        terms: d.terms, storages: d.storages, colours: d.colours,
+      }));
 
       const urlParams = new URLSearchParams(window.location.search);
       const requestedDevice = urlParams.get('device');
       state.deviceId = DEVICES.some(d => d.id === requestedDevice) ? requestedDevice : DEVICES[0].id;
 
       render();
-    })
-    .catch(err => {
-      document.querySelector('.wrap').innerHTML = '<p style="padding:60px 0;">Couldn\'t load device data. Check that data/devices.json exists next to this page.</p>';
-      console.error(err);
     });
 
   function render(){
