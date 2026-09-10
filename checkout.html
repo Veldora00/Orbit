@@ -64,6 +64,12 @@
   .status-pill.pending{ border-color:var(--line-strong); color:var(--ink-faint); }
 
   .microcopy{ font-size:12.5px; color:var(--ink-faint); margin-top:20px; line-height:1.6; text-align:center; }
+
+  .site-foot{ border-top:1px solid var(--line); padding:32px 0; margin-top:20px; }
+  .foot-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--ink-faint); }
+  .foot-links{ display:flex; gap:20px; flex-wrap:wrap; font-size:13.5px; }
+  .foot-links a{ color:var(--ink-dim); text-decoration:none; }
+  .foot-links a:hover{ color:var(--ink); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -120,6 +126,19 @@
 
   <p class="microcopy">This is a preview flow — no real verification or charge happens yet. Once your backend is connected, these two buttons call real Didit and Stripe sessions.</p>
 </div>
+
+<footer class="site-foot">
+  <div class="wrap foot-row">
+    <div class="foot-links">
+      <a href="index.html#faq">FAQs</a>
+      <a href="terms.html">Terms of Use</a>
+      <a href="terms.html#damage-cover">Damage Cover &amp; fees</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="mailto:info@talaks.com">info@talaks.com</a>
+    </div>
+    <span>© 2026 Talaks. Sydney, Australia.</span>
+  </div>
+</footer>
 
 <script>
   const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
