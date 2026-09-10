@@ -106,6 +106,16 @@
   .term-pill .tag{ font-size:11px; color:var(--brand-ink); background:var(--teal); padding:3px 8px; border-radius:999px; }
   .term-pill .price{ font-family:var(--serif); font-size:17px; }
   .term-pill .price small{ font-size:12px; color:var(--ink-faint); font-family:var(--sans); }
+  .term-pill .price s{ font-size:14px; color:var(--ink-faint); margin-right:7px; font-weight:400; }
+
+  .stage-save{
+    position:absolute; top:20px; right:20px; font-size:12px; font-weight:600;
+    color:var(--brand-ink); background:var(--brand); padding:5px 12px; border-radius:999px;
+  }
+  .summary-row s{ color:var(--ink-faint); margin-right:7px; font-weight:400; }
+  .was-line{ font-size:13.5px; color:var(--ink-faint); margin:0 0 18px; }
+  .was-line s{ margin-right:8px; }
+  .was-line b{ color:var(--brand-deep); font-weight:600; }
   .term-pill.active{ border-color:var(--brand); background:var(--peach); }
   .term-pill.active .price{ color:var(--brand-deep); }
 
@@ -144,6 +154,7 @@
   .device-card img{ width:100%; height:90px; object-fit:contain; margin-bottom:10px; }
   .device-card .dn{ font-size:13.5px; font-weight:600; margin-bottom:2px; }
   .device-card .dp{ font-size:12px; color:var(--ink-faint); }
+  .device-card .dp s{ margin-right:5px; }
 
   .site-foot{ border-top:1px solid var(--line); padding:32px 0; margin-top:40px; }
   .foot-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--ink-faint); }
@@ -173,6 +184,7 @@
 
     <div class="stage">
       <div class="stage-badge">Brand new</div>
+      <div class="stage-save" id="stage-save" style="display:none;"></div>
       <img id="stage-img" src="" alt="">
     </div>
 
@@ -181,6 +193,7 @@
 
       <h1 id="p-name">iPhone 17 Pro Max</h1>
       <p class="subtitle" id="p-sub">6.9-inch Super Retina XDR display with ProMotion, A19 Pro chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.</p>
+      <p class="was-line" id="was-line" style="display:none;"></p>
 
       <div class="field">
         <div class="field-label"><span>Storage</span></div>
@@ -216,7 +229,7 @@
         <span id="cta-price">$0/mo</span>
       </button>
 
-      <p class="microcopy">Approval subject to identity verification. You never own the device — return, renew, or upgrade when your term ends. Total payments are always at or below RRP.</p>
+      <p class="microcopy">Subject to a quick ID check. At the end of your term you can upgrade free, renew, or send it back. Total payments always stay under the phone's retail price.</p>
     </div>
   </div>
 
@@ -320,6 +333,14 @@
     const coverMonthly = state.cover ? carePrice : 0;
     const monthlyWithCover = monthly + coverMonthly;
 
+    // Optional discount: a storage tier can carry rrp_was (the price before the
+    // drop). Monthly pricing follows RRP automatically, so we just show what the
+    // monthly used to be at the old RRP.
+    const rrpWas = Number(storage.rrp_was || 0);
+    const onSale = rrpWas > Number(storage.rrp);
+    const wasMonthly = onSale ? (rrpWas * pct) / months : 0;
+    const wasTotal   = onSale ? rrpWas * pct : 0;
+
     document.getElementById('crumb-brand').textContent = device.brand;
     document.getElementById('crumb-brand-link').href = 'catalog.html?brand=' + encodeURIComponent(device.brand);
     document.getElementById('crumb-name').textContent = device.name;
@@ -329,7 +350,22 @@
     document.getElementById('stage-img').alt = device.name + ' in ' + colour.name;
     document.getElementById('stage-img').onerror = function(){ this.onerror=null; this.src = PLACEHOLDER_IMG; };
     document.getElementById('colour-name').textContent = colour.name;
-    document.getElementById('sum-total').textContent = money(total) + (state.cover ? ' + ' + money(coverMonthly * months) + ' cover' : '') + ' over term';
+    document.getElementById('sum-total').innerHTML =
+      (onSale ? '<s>' + money(wasTotal) + '</s>' : '') +
+      money(total) + (state.cover ? ' + ' + money(coverMonthly * months) + ' cover' : '') + ' over term';
+
+    const saveEl = document.getElementById('stage-save');
+    const wasEl  = document.getElementById('was-line');
+    if (onSale){
+      saveEl.style.display = '';
+      saveEl.textContent = 'Save ' + money(wasMonthly - monthly) + '/mo';
+      wasEl.style.display = '';
+      wasEl.innerHTML = '<s>' + money(wasMonthly) + '/month</s> now <b>' + money(monthly) +
+        '/month</b> — RRP dropped from ' + money(rrpWas) + ' to ' + money(storage.rrp) + '.';
+    } else {
+      saveEl.style.display = 'none';
+      wasEl.style.display = 'none';
+    }
     document.getElementById('sum-cover').textContent = state.cover ? money(carePrice) + '/mo added' : 'Not added';
     document.getElementById('cta-price').textContent = money(monthlyWithCover) + '/mo';
     document.getElementById('cover-price').textContent = '+' + money(carePrice) + '/mo';
@@ -388,11 +424,13 @@
       const tot = storage.rrp * p;
       // Cover is priced per term, so when it's on, each term shows its own all-in price
       const mo = tot / m + (state.cover ? careFor(device, m) : 0);
+      const moWas = onSale ? (rrpWas * p) / m + (state.cover ? careFor(device, m) : 0) : 0;
       const row = document.createElement('button');
       row.className = 'term-pill' + (m === months ? ' active' : '');
       row.innerHTML =
         '<span class="t">' + meta.label + (meta.recommended ? '<span class="tag">Popular</span>' : '') + '</span>' +
-        '<span class="price">' + money(mo) + '<small>/mo</small></span>';
+        '<span class="price">' + (onSale ? '<s>' + money(moWas) + '</s>' : '') +
+          money(mo) + '<small>/mo</small></span>';
       row.onclick = () => { state.termIdx = m; render(); };
       termRows.appendChild(row);
     });
@@ -404,11 +442,15 @@
       card.className = 'device-card' + (d.id === state.deviceId ? ' active' : '');
       const dTerms = Object.keys(d.terms).map(Number);
       const cheapTerm = dTerms.includes(24) ? 24 : dTerms[0];
-      const cheapest = Math.min(...d.storages.map(s => (s.rrp * d.terms[cheapTerm]) / cheapTerm));
+      const cheapest = Math.min(...d.storages.map(s => (Number(s.rrp) * d.terms[cheapTerm]) / cheapTerm));
+      const wasPrices = d.storages.filter(s => Number(s.rrp_was || 0) > Number(s.rrp))
+                                  .map(s => (Number(s.rrp_was) * d.terms[cheapTerm]) / cheapTerm);
+      const wasCheapest = wasPrices.length ? Math.min(...wasPrices) : null;
       card.innerHTML =
         '<img src="' + d.colours[0].img + '" alt="' + d.name + '" onerror="this.onerror=null;this.src=\'' + PLACEHOLDER_IMG + '\'">' +
         '<div class="dn">' + d.name + '</div>' +
-        '<div class="dp">From ' + money(cheapest) + '/mo</div>';
+        '<div class="dp">' + (wasCheapest && wasCheapest > cheapest ? '<s>' + money(wasCheapest) + '</s> ' : '') +
+          'From ' + money(cheapest) + '/mo</div>';
       card.onclick = () => {
         state.deviceId = d.id; state.storageIdx = 0; state.colourIdx = 0;
         render();
