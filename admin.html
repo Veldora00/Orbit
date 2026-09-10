@@ -84,10 +84,17 @@
   .status-toggle{ display:flex; gap:10px; margin-bottom:4px; }
   .status-opt{ flex:1; border:1px solid var(--line-strong); padding:11px; text-align:center; cursor:pointer; font-size:13.5px; }
   .status-opt.active{ border-color:var(--amber); color:var(--amber); }
-  .terms-row{ display:flex; gap:16px; align-items:center; margin-bottom:10px; }
-  .terms-row label{ width:70px; font-size:13.5px; color:var(--paper-dim); }
-  .terms-row input[type=checkbox]{ accent-color:var(--amber); }
-  .terms-row input[type=number]{ width:110px; }
+  .terms-grid{ display:grid; grid-template-columns:56px 22px 1fr 1fr; gap:10px 12px; align-items:center; }
+  .terms-grid .th{ font-size:11.5px; color:var(--paper-faint); letter-spacing:0.03em; text-transform:uppercase; }
+  .terms-grid label{ font-size:13.5px; color:var(--paper-dim); }
+  .terms-grid input[type=checkbox]{ accent-color:var(--amber); }
+  .terms-grid input[type=number]{
+    width:100%; background:var(--ink); border:1px solid var(--line-strong); border-radius:8px;
+    color:var(--paper); padding:9px 11px; font-size:14px; font-family:inherit;
+  }
+  .terms-grid input[type=number]:focus{ outline:none; border-color:var(--amber); }
+  .terms-grid input[type=number]:disabled{ opacity:0.4; }
+  .terms-note{ font-size:12.5px; color:var(--paper-faint); margin-top:14px; line-height:1.5; }
   .form-actions{ display:flex; gap:12px; margin-top:8px; }
   .form-actions .btn-primary{ width:auto; flex:1; }
   .form-actions .btn-ghost{ flex:0 0 auto; }
@@ -264,6 +271,12 @@
   function openForm(id){
     const existing = id ? DEVICES.find(d => d.id === id) : null;
     if (existing){
+      // Pricing is stored as a % of RRP so higher storage tiers price themselves,
+      // but it's edited here in plain $/month — convert on the way in.
+      const baseRrp = existing.storages && existing.storages[0] ? Number(existing.storages[0].rrp) : 0;
+      const monthlyFor = m => (existing.terms?.[m] != null && baseRrp)
+        ? String(Math.round((baseRrp * existing.terms[m] / m) * 100) / 100)
+        : '';
       formState = {
         isNew: false,
         id: existing.id,
@@ -273,14 +286,19 @@
         care_monthly: existing.care_monthly ?? '',
         cover_desc: existing.cover_desc || '',
         status: existing.terms ? 'live' : 'draft',
-        terms: { 12: existing.terms?.[12] != null ? existing.terms[12]*100 : '', 24: existing.terms?.[24] != null ? existing.terms[24]*100 : '', 36: existing.terms?.[36] != null ? existing.terms[36]*100 : '' },
+        monthly: { 12: monthlyFor(12), 24: monthlyFor(24), 36: monthlyFor(36) },
+        care: {
+          12: existing.care_terms?.[12] ?? '',
+          24: existing.care_terms?.[24] ?? '',
+          36: existing.care_terms?.[36] ?? '',
+        },
         storages: existing.storages && existing.storages.length ? JSON.parse(JSON.stringify(existing.storages)) : [{ gb:'', rrp:'' }],
         colours: existing.colours && existing.colours.length ? JSON.parse(JSON.stringify(existing.colours)) : [{ name:'', img:'' }],
       };
     } else {
       formState = {
         isNew: true, id: '', brand: 'Apple', name: '', sub: '', care_monthly: '', cover_desc: '',
-        status: 'draft', terms: { 12:'', 24:'', 36:'' },
+        status: 'draft', monthly: { 12:'', 24:'', 36:'' }, care: { 12:'', 24:'', 36:'' },
         storages: [{ gb:'', rrp:'' }], colours: [{ name:'', img:'' }],
       };
     }
@@ -302,10 +320,7 @@
       '</div>' +
       '<div class="field"><label>Name (shown to customers)</label><input id="f-name" value="' + escapeHtml(f.name) + '"></div>' +
       '<div class="field"><label>Description</label><textarea id="f-sub">' + escapeHtml(f.sub) + '</textarea></div>' +
-      '<div class="grid2">' +
-        '<div class="field"><label>Damage Cover — monthly ($)</label><input type="number" step="0.01" id="f-care" value="' + escapeHtml(f.care_monthly) + '"></div>' +
-        '<div class="field"><label>Damage Cover — description</label><input id="f-coverdesc" value="' + escapeHtml(f.cover_desc) + '"></div>' +
-      '</div>' +
+      '<div class="field"><label>Damage Cover — description (shown to customers)</label><input id="f-coverdesc" value="' + escapeHtml(f.cover_desc) + '"></div>' +
 
       '<fieldset><legend>Status</legend>' +
         '<div class="status-toggle">' +
@@ -314,15 +329,19 @@
         '</div>' +
       '</fieldset>' +
 
-      '<fieldset><legend>Subscription pricing — % of RRP by term</legend>' +
-        [12,24,36].map(m =>
-          '<div class="terms-row">' +
+      '<fieldset><legend>Pricing per term — in dollars per month</legend>' +
+        '<div class="terms-grid">' +
+          '<span></span><span></span>' +
+          '<span class="th">Plan price $/mo</span>' +
+          '<span class="th">Damage Cover $/mo</span>' +
+          [12,24,36].map(m =>
             '<label>' + m + ' mo</label>' +
-            '<input type="checkbox" data-term-check="' + m + '" ' + (f.terms[m] !== '' ? 'checked' : '') + '>' +
-            '<input type="number" step="0.1" placeholder="e.g. 49.7" data-term-val="' + m + '" value="' + escapeHtml(f.terms[m]) + '" ' + (f.terms[m] === '' ? 'disabled' : '') + '>' +
-            '<span style="font-size:12.5px; color:var(--paper-faint);">%</span>' +
-          '</div>'
-        ).join('') +
+            '<input type="checkbox" data-term-check="' + m + '" ' + (f.monthly[m] !== '' ? 'checked' : '') + '>' +
+            '<input type="number" step="0.01" placeholder="e.g. 57" data-term-val="' + m + '" value="' + escapeHtml(f.monthly[m]) + '" ' + (f.monthly[m] === '' ? 'disabled' : '') + '>' +
+            '<input type="number" step="0.01" placeholder="e.g. 14" data-care-val="' + m + '" value="' + escapeHtml(f.care[m]) + '" ' + (f.monthly[m] === '' ? 'disabled' : '') + '>'
+          ).join('') +
+        '</div>' +
+        '<p class="terms-note">Tick a term to offer it. Enter what the customer pays each month for the <strong>base storage tier</strong> — the larger tiers are priced up automatically at the same ratio. Leave a term unticked and it won\'t appear on the site (Samsung plans, for example, run 12 and 24 months only).</p>' +
       '</fieldset>' +
 
       '<fieldset><legend>Storage tiers</legend><div id="storage-rows"></div>' +
@@ -347,13 +366,20 @@
     });
     formBox.querySelectorAll('[data-term-check]').forEach(cb => cb.onchange = () => {
       const m = cb.dataset.termCheck;
-      formState.terms[m] = cb.checked ? (formState.terms[m] === '' ? '' : formState.terms[m]) : '';
-      const valInput = formBox.querySelector('[data-term-val="' + m + '"]');
-      valInput.disabled = !cb.checked;
-      if (!cb.checked) valInput.value = '';
+      const priceInput = formBox.querySelector('[data-term-val="' + m + '"]');
+      const careInput  = formBox.querySelector('[data-care-val="' + m + '"]');
+      priceInput.disabled = !cb.checked;
+      careInput.disabled  = !cb.checked;
+      if (!cb.checked){
+        priceInput.value = ''; careInput.value = '';
+        formState.monthly[m] = ''; formState.care[m] = '';
+      }
     });
     formBox.querySelectorAll('[data-term-val]').forEach(inp => inp.oninput = () => {
-      formState.terms[inp.dataset.termVal] = inp.value;
+      formState.monthly[inp.dataset.termVal] = inp.value;
+    });
+    formBox.querySelectorAll('[data-care-val]').forEach(inp => inp.oninput = () => {
+      formState.care[inp.dataset.careVal] = inp.value;
     });
 
     document.getElementById('add-storage').onclick = () => { formState.storages.push({ gb:'', rrp:'' }); renderStorageRows(); };
@@ -372,8 +398,6 @@
     if (brandEl) formState.brand = brandEl.value;
     const subEl = document.getElementById('f-sub');
     if (subEl) formState.sub = subEl.value;
-    const careEl = document.getElementById('f-care');
-    if (careEl) formState.care_monthly = careEl.value;
     const coverEl = document.getElementById('f-coverdesc');
     if (coverEl) formState.cover_desc = coverEl.value;
   }
@@ -425,7 +449,6 @@
     const name = document.getElementById('f-name').value.trim();
     const brand = document.getElementById('f-brand').value.trim();
     const sub = document.getElementById('f-sub').value.trim();
-    const care_monthly = document.getElementById('f-care').value === '' ? null : Number(document.getElementById('f-care').value);
     const cover_desc = document.getElementById('f-coverdesc').value.trim();
 
     if (f.isNew && !id) id = slugify(name);
@@ -448,20 +471,48 @@
       return;
     }
 
+    // Monthly dollars are converted back to a % of the base storage tier's RRP,
+    // which is what the site stores and what prices the larger tiers.
+    const baseRrp = Number(storages[0].rrp);
     let terms = null;
+    let care_terms = null;
+    let care_monthly = null;
+
     if (f.status === 'live'){
-      terms = {};
-      [12,24,36].forEach(m => {
-        if (f.terms[m] !== '' && f.terms[m] != null) terms[m] = Number(f.terms[m]) / 100;
-      });
-      if (Object.keys(terms).length === 0){
-        msg.textContent = 'A live device needs at least one subscription term priced.';
+      if (!baseRrp){
+        msg.textContent = 'The first storage tier needs an RRP before pricing can be worked out.';
         msg.classList.add('err'); msg.classList.remove('hidden');
         return;
       }
+      terms = {};
+      care_terms = {};
+      for (const m of [12,24,36]){
+        const priced = f.monthly[m] !== '' && f.monthly[m] != null;
+        if (!priced) continue;
+        const monthly = Number(f.monthly[m]);
+        if (!(monthly > 0)){
+          msg.textContent = 'The ' + m + '-month plan price needs to be a number above zero.';
+          msg.classList.add('err'); msg.classList.remove('hidden');
+          return;
+        }
+        terms[m] = (monthly * m) / baseRrp;
+        if (f.care[m] !== '' && f.care[m] != null) care_terms[m] = Number(f.care[m]);
+      }
+      if (Object.keys(terms).length === 0){
+        msg.textContent = 'A live device needs at least one term priced.';
+        msg.classList.add('err'); msg.classList.remove('hidden');
+        return;
+      }
+      if (Object.keys(care_terms).length === 0) care_terms = null;
+      // Keep the old single-value column populated as a fallback for anything
+      // still reading it — use the longest priced term's cover price.
+      if (care_terms){
+        const longest = Math.max(...Object.keys(care_terms).map(Number));
+        care_monthly = care_terms[longest];
+      }
     }
 
-    const payload = { id, brand, name, sub, care_monthly, cover_desc, terms, storages, colours };
+    const payload = { id, brand, name, sub, care_monthly, care_terms, cover_desc, terms, storages, colours };
 
     const saveBtn = document.getElementById('save-btn');
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
