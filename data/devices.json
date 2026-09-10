@@ -71,10 +71,9 @@
       "brand": "Apple",
       "name": "iPhone Duo",
       "sub": "Apple's first foldable iPhone. 7.6-inch inner display, 5.4-inch outer display, A20 Pro chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.",
-      "careMonthly": null,
+      "careMonthly": 20,
       "coverDesc": "Unlimited repairs for accidental damage, each subject to a service fee. Includes theft and loss cover.",
-      "_pricing_status": "AWAITING REAL SHEET — only the $3499 RRP has been given, no 12/24/36mo monthly figures yet. Not wired into product.html until confirmed.",
-      "terms": null,
+      "terms": { "12": 0.549, "24": 0.803, "36": 0.947 },
       "storages": [
         { "gb": "256GB", "rrp": 3499 }
       ],
