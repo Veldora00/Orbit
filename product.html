@@ -233,87 +233,39 @@
 <script>
   // ---------------- DEVICE CATALOGUE ----------------
   // RRP figures are approximate current AU launch pricing for the base storage tier,
-  // used only to calculate rental pricing under RRP. Not live Apple pricing.
-  // Pricing sourced directly from Talaks' real pricing sheets.
-  // iPhone: 12/24/36mo terms, AppleCare-style Damage Cover flat monthly add-on.
-  // Samsung: 12/24mo only (no 36mo), flat $25/mo Damage Cover add-on, $99 screen
-  // replacement fee thereafter (first screen replacement free).
-  const DEVICES = [
-    {
-      id:'iphone-17', brand:'Apple', name:'iPhone 17',
-      sub:'6.3-inch Super Retina XDR display, A19 chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
-      careMonthly: 14,
-      coverDesc: 'Unlimited repairs for accidental damage, each subject to a service fee. Includes theft and loss cover.',
-      terms:{ 12:0.497, 24:0.755, 36:0.952 },
-      storages:[
-        {gb:'256GB', rrp:1399},
-        {gb:'512GB', rrp:1799},
-      ],
-      colours:[
-        {name:'Black', img:'images/Iphone 17 Black.webp'},
-        {name:'White', img:'images/Iphone 17 White.webp'},
-        {name:'Mist Blue', img:'images/Iphone 17 Mist Blue.webp'},
-        {name:'Sage', img:'images/Iphone 17 Sage.webp'},
-        {name:'Lavender', img:'images/Iphone 17 Lavender.webp'},
-      ]
-    },
-    {
-      id:'galaxy-s26', brand:'Samsung', name:'Galaxy S26',
-      sub:'6.3-inch Dynamic AMOLED 2X display, Exynos 2600 chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
-      careMonthly: 25,
-      coverDesc: '$99 screen replacement fee per repair after your first — your first screen replacement is free.',
-      terms:{ 12: (103*12)/1549, 24: (58*24)/1549 },
-      storages:[
-        {gb:'256GB', rrp:1549},
-      ],
-      colours:[
-        {name:'Phantom Black', img:'images/galaxy-s26-phantom-black.png'},
-      ]
-    },
-    {
-      id:'galaxy-s26-plus', brand:'Samsung', name:'Galaxy S26 Plus',
-      sub:'6.7-inch Dynamic AMOLED 2X display, Exynos 2600 chip. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
-      careMonthly: 25,
-      coverDesc: '$99 screen replacement fee per repair after your first — your first screen replacement is free.',
-      terms:{ 12: (112*12)/1849, 24: (82*24)/1849 },
-      storages:[
-        {gb:'256GB', rrp:1849},
-      ],
-      colours:[
-        {name:'Phantom Black', img:'images/galaxy-s26-plus-phantom-black.png'},
-      ]
-    },
-    {
-      id:'galaxy-s26-ultra', brand:'Samsung', name:'Galaxy S26 Ultra',
-      sub:'6.9-inch Dynamic AMOLED 2X display, Snapdragon 8 Elite Gen 5. Brand new, sealed, with full manufacturer warranty for the life of your plan.',
-      careMonthly: 25,
-      coverDesc: '$99 screen replacement fee per repair after your first — your first screen replacement is free.',
-      terms:{ 12: (128*12)/2199, 24: (95*24)/2199 },
-      storages:[
-        {gb:'256GB', rrp:2199},
-        {gb:'512GB', rrp:2499},
-        {gb:'1TB', rrp:2949},
-      ],
-      colours:[
-        {name:'Phantom Black', img:'images/galaxy-s26-ultra-phantom-black.png'},
-      ]
-    },
-  ];
-
+  // Device/pricing data now lives in data/devices.json — a single shared
+  // file both this page and checkout.html load, instead of duplicating the
+  // catalogue in every page's code. Edit that file to update pricing.
   const TERM_META = {
     12: { label:'12 months', note:'Fastest device turnover' },
     24: { label:'24 months', note:'Most popular', recommended:true },
     36: { label:'36 months', note:'Lowest monthly price' },
   };
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const requestedDevice = urlParams.get('device');
-  const startDevice = DEVICES.some(d => d.id === requestedDevice) ? requestedDevice : 'iphone-17';
-
-  let state = { deviceId: startDevice, storageIdx:0, colourIdx:0, termIdx:24, cover:false };
+  let DEVICES = [];
+  let state = { deviceId: null, storageIdx:0, colourIdx:0, termIdx:24, cover:false };
 
   function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
   function getDevice(){ return DEVICES.find(d => d.id === state.deviceId); }
+
+  fetch('data/devices.json')
+    .then(r => r.json())
+    .then(data => {
+      // Only show devices with confirmed real pricing (terms !== null).
+      // iPhone 16 and iPhone Duo are in the data file but excluded here
+      // until their real monthly pricing sheet is confirmed.
+      DEVICES = data.devices.filter(d => d.terms !== null);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedDevice = urlParams.get('device');
+      state.deviceId = DEVICES.some(d => d.id === requestedDevice) ? requestedDevice : DEVICES[0].id;
+
+      render();
+    })
+    .catch(err => {
+      document.querySelector('.wrap').innerHTML = '<p style="padding:60px 0;">Couldn\'t load device data. Check that data/devices.json exists next to this page.</p>';
+      console.error(err);
+    });
 
   function render(){
     const device = getDevice();
@@ -427,8 +379,6 @@
       deviceRail.appendChild(card);
     });
   }
-
-  render();
 </script>
 
 </body>
