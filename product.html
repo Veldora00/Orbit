@@ -152,7 +152,7 @@
   <div class="wrap row">
     <a href="index.html" class="brand">Tal<span>a</span>ks</a>
     <div class="navlinks">
-      <a href="product.html">Devices</a>
+      <a href="catalog.html">Devices</a>
       <a href="index.html#how">How it works</a>
       <a href="index.html#faq">FAQ</a>
     </div>
@@ -160,7 +160,7 @@
 </nav>
 
 <div class="wrap">
-  <div class="crumb"><a href="#">Devices</a> &nbsp;/&nbsp; <span id="crumb-brand">Apple</span> &nbsp;/&nbsp; <span id="crumb-name">iPhone 17 Pro Max</span></div>
+  <div class="crumb"><a href="catalog.html">Devices</a> &nbsp;/&nbsp; <a id="crumb-brand-link" href="#"><span id="crumb-brand">Apple</span></a> &nbsp;/&nbsp; <span id="crumb-name">iPhone 17 Pro Max</span></div>
 
   <div class="product">
     <div class="thumbrail" id="thumbrail"></div>
@@ -262,7 +262,13 @@
 
       const urlParams = new URLSearchParams(window.location.search);
       const requestedDevice = urlParams.get('device');
-      state.deviceId = DEVICES.some(d => d.id === requestedDevice) ? requestedDevice : DEVICES[0].id;
+      if (!requestedDevice || !DEVICES.some(d => d.id === requestedDevice)) {
+        // No valid device requested — send them to the catalogue to choose one,
+        // rather than silently guessing a device for them.
+        window.location.replace('catalog.html');
+        return;
+      }
+      state.deviceId = requestedDevice;
 
       render();
     });
@@ -281,6 +287,7 @@
     const monthlyWithCover = monthly + coverMonthly;
 
     document.getElementById('crumb-brand').textContent = device.brand;
+    document.getElementById('crumb-brand-link').href = 'catalog.html?brand=' + encodeURIComponent(device.brand);
     document.getElementById('crumb-name').textContent = device.name;
     document.getElementById('p-name').textContent = device.name;
     document.getElementById('p-sub').textContent = device.sub;
