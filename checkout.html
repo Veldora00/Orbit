@@ -159,7 +159,12 @@
   const termMonths = parseInt(params.get('term'), 10);
   const coverSelected = params.get('cover') === '1';
 
-  function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
+  function money(n){
+    const r = Math.round(n * 100) / 100;
+    return '$' + r.toLocaleString('en-AU', r % 1 === 0
+      ? { maximumFractionDigits: 0 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
   supabaseClient
     .from('devices')
@@ -172,7 +177,7 @@
 
       if (row) {
         const device = {
-          id: row.id, name: row.name, careMonthly: row.care_monthly,
+          id: row.id, name: row.name, careMonthly: row.care_monthly, careTerms: row.care_terms,
           terms: row.terms, storages: row.storages, colours: row.colours,
         };
         const storage = device.storages.find(s => s.gb === storageGb);
@@ -180,7 +185,11 @@
         const pct = device.terms[termMonths];
         const total = rrp * pct;
         const monthly = total / termMonths;
-        const coverMonthly = coverSelected ? device.careMonthly : 0;
+        // Damage Cover is priced per term; fall back to the old flat value if unset
+        const carePrice = (device.careTerms && device.careTerms[termMonths] != null)
+          ? Number(device.careTerms[termMonths])
+          : (Number(device.careMonthly) || 0);
+        const coverMonthly = coverSelected ? carePrice : 0;
         const colour = device.colours.find(c => c.name === colourName);
 
         document.getElementById('plan-img').src = colour.img;
