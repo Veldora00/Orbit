@@ -142,8 +142,15 @@
   .device-tile:hover{ border-color:var(--brand); transform:translateY(-3px); box-shadow:0 16px 32px rgba(22,26,32,0.08); }
   .device-tile .thumb{ background:var(--paper-warm); border-radius:12px; margin-bottom:20px; padding:16px; }
   .device-tile img{ width:100%; height:140px; object-fit:contain; }
+  .device-tile{ position:relative; }
   .device-tile .dn{ font-size:15.5px; font-weight:600; margin-bottom:5px; }
   .device-tile .dp{ font-size:13.5px; color:var(--ink-faint); }
+  .device-tile .dp s{ margin-right:6px; }
+  .device-tile .dp b{ color:var(--brand-deep); font-weight:600; }
+  .save-flag{
+    position:absolute; top:14px; right:14px; background:var(--brand); color:#fff;
+    font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px;
+  }
 
   section.trust{padding:110px 0; border-bottom:1px solid var(--line);}
   .trust-grid{display:grid; grid-template-columns:0.85fr 1.15fr; gap:80px;}
@@ -204,16 +211,16 @@
 <header class="hero">
   <div class="hero-inner">
     <div class="hero-copy">
-      <h1 class="headline">Carry the newest tech. <span class="accent">Never get stuck with it.</span></h1>
-      <p class="hero-sub">Brand-new iPhone and Galaxy flagships on a fixed monthly plan. Move to the newest model when your term ends — no upfront cost, no loan, nothing owing when you hand it back.</p>
+      <h1 class="headline">Always on the <span class="accent">latest tech.</span></h1>
+      <p class="hero-sub">Brand-new iPhones and Galaxy flagships, yours from <span id="hero-from">$37</span>/month. Free upgrades, free delivery, no upfront cost.</p>
       <div class="hero-ctas">
         <a href="catalog.html" class="btn-primary">See your monthly price</a>
         <a href="#how" class="btn-text">How it works</a>
       </div>
       <div class="hero-stats">
-        <div class="hero-stat"><div class="num">$0</div><div class="lbl">Upfront cost</div></div>
-        <div class="hero-stat"><div class="num">Same day</div><div class="lbl">Approval decision</div></div>
-        <div class="hero-stat"><div class="num">Always</div><div class="lbl">On the newest tech</div></div>
+        <div class="hero-stat"><div class="num">$0</div><div class="lbl">To get started</div></div>
+        <div class="hero-stat"><div class="num">Free</div><div class="lbl">Upgrades and delivery</div></div>
+        <div class="hero-stat"><div class="num">No</div><div class="lbl">Credit check</div></div>
       </div>
     </div>
     <div class="hero-photo">
@@ -227,28 +234,28 @@
   <div class="wrap">
     <div class="how-head">
       <p class="eyebrow">How it works</p>
-      <h2>Four steps, and the phone's on its way.</h2>
+      <h2>Four steps to your new phone.</h2>
     </div>
     <div class="steps-flow">
       <div class="step-row">
         <div class="step-num">01</div>
-        <div class="step-title">Pick a device</div>
-        <div class="step-desc">Choose an iPhone or Samsung Galaxy flagship, storage size, and colour.</div>
+        <div class="step-title">Choose your phone and term</div>
+        <div class="step-desc">Pick your model, storage and colour. Longer terms cost less per month.</div>
       </div>
       <div class="step-row">
         <div class="step-num">02</div>
-        <div class="step-title">Verify your identity</div>
-        <div class="step-desc">A quick ID check — no credit check, usually done in under two minutes.</div>
+        <div class="step-title">Verify your ID</div>
+        <div class="step-desc">Takes about two minutes. No credit check, and nothing shows on your credit file.</div>
       </div>
       <div class="step-row">
         <div class="step-num">03</div>
-        <div class="step-title">Pick a term</div>
-        <div class="step-desc">12, 24 or 36 months. Longer terms bring your monthly price down.</div>
+        <div class="step-title">Get it delivered free</div>
+        <div class="step-desc">Brand new and sealed, in 3–5 business days.</div>
       </div>
       <div class="step-row">
         <div class="step-num">04</div>
-        <div class="step-title">It arrives, you pay monthly</div>
-        <div class="step-desc">Free delivery. At term's end, return it, extend, or move to the newest model.</div>
+        <div class="step-title">At the end, take your pick</div>
+        <div class="step-desc">Upgrade to the newest model for free, renew what you've got, or send it back.</div>
       </div>
     </div>
   </div>
@@ -257,8 +264,8 @@
 <section class="featured">
   <div class="wrap">
     <div class="featured-head">
-      <h2>Every plan priced under its retail value.</h2>
-      <p>Real devices, real monthly prices, updated live.</p>
+      <h2>Popular right now</h2>
+      <p>Every plan costs less than buying the phone outright.</p>
     </div>
     <div class="device-grid" id="featured-grid"></div>
   </div>
@@ -268,15 +275,16 @@
   <div class="wrap trust-grid">
     <div>
       <p class="eyebrow">Why subscribe</p>
-      <h2>Phones get outdated faster than finance plans get paid off.</h2>
-      <p>A 36-month phone loan locks you into today's chip until three years from now. New models, better cameras, longer battery life land every single year regardless — subscribing means you're never the one stuck holding the old hardware while everyone else moves on.</p>
+      <h2>Cheaper than buying. Better than being stuck.</h2>
+      <p>New phones land every year. Buy one outright and you're on it until you sell it. Subscribe and you just move to the next one.</p>
     </div>
     <ul class="trust-list">
-      <li><span class="mark">01</span><div><b>Upgrade to the newest model, free</b><span class="desc">At the end of your term, swap to whatever's newest — no upgrade fee, no new contract to negotiate. That's the whole point of never owning the thing.</span></div></li>
-      <li><span class="mark">02</span><div><b>No purchase option</b><span class="desc">The device always goes back to us at the end of your term — that's what keeps every plan a straightforward subscription, not a loan.</span></div></li>
-      <li><span class="mark">03</span><div><b>Capped exit fee</b><span class="desc">Need out early? The early-exit charge is fixed and disclosed upfront — never the full remaining balance.</span></div></li>
-      <li><span class="mark">04</span><div><b>Condition-based Damage Cover</b><span class="desc">Everyday wear is expected. Cover kicks in for accidental damage so a cracked screen doesn't become a large bill.</span></div></li>
-      <li><span class="mark">05</span><div><b>Refurbished, not landfilled</b><span class="desc">Returned phones are inspected, refurbished, and given a second lease — which is exactly why the pricing works.</span></div></li>
+      <li><span class="mark">01</span><div><b>Free upgrades</b><span class="desc">Move to the newest model at the end of your term. No upgrade fee.</span></div></li>
+      <li><span class="mark">02</span><div><b>No credit check</b><span class="desc">Just a two-minute ID check. It won't touch your credit file.</span></div></li>
+      <li><span class="mark">03</span><div><b>Damage Cover</b><span class="desc">Accidents are covered, so a cracked screen doesn't turn into a big bill. Everyday wear is never charged.</span></div></li>
+      <li><span class="mark">04</span><div><b>Fixed monthly price</b><span class="desc">Your price is locked for the whole term. No interest, and total payments stay under the phone's retail price.</span></div></li>
+      <li><span class="mark">05</span><div><b>Leave early if you need to</b><span class="desc">There's a fixed exit fee, shown before you sign up. Never the full remaining balance.</span></div></li>
+      <li><span class="mark">06</span><div><b>Better for the planet</b><span class="desc">Every phone that comes back is refurbished and goes to its next subscriber, not to landfill.</span></div></li>
     </ul>
   </div>
 </section>
@@ -310,7 +318,7 @@
       </details>
       <details>
         <summary>What if I damage it?</summary>
-        <p>Accidents happen, which is exactly why Damage Cover exists. It's included free on 24- and 36-month plans, and available as a cheap add-on on 12-month plans — so a cracked screen doesn't turn into a big bill. Normal everyday wear is never charged.</p>
+        <p>That's what Damage Cover is for. You can add it to any plan, and the monthly price is shown on your device's page before you subscribe — longer terms have a cheaper monthly cover price. Normal everyday wear is never charged.</p>
       </details>
       <details>
         <summary>Do I need to keep the original box and accessories?</summary>
@@ -326,7 +334,7 @@
       </details>
       <details>
         <summary>Is this the same as buying on a payment plan?</summary>
-        <p>Not quite. A payment plan is financing — you own the phone once it's paid off, and what you owe along the way is real debt. With Talaks you never own the device, your total payments are capped below its retail price, and there's nothing owing once you hand it back.</p>
+        <p>Not quite. On a payment plan you're buying the phone, and what's left to pay is a debt you owe. With Talaks you're subscribing to use it. Your total payments stay under the phone's retail price, and once you send it back at the end of your term, you're done.</p>
       </details>
     </div>
   </div>
@@ -384,23 +392,44 @@
       const grid = document.getElementById('featured-grid');
       grid.innerHTML = '';
 
+      const placeholder = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#FBF8F3"/><text x="50%" y="50%" font-family="sans-serif" font-size="13" fill="#8B93A1" text-anchor="middle" dominant-baseline="middle">Photo coming soon</text></svg>'
+      );
+
+      // Cheapest monthly across this device's terms. useWas prices it off the
+      // pre-discount RRP so we can show the old price crossed out.
+      const cheapestMonthly = (d, useWas) => {
+        const s = d.storages[0];
+        const rrp = useWas ? Number(s.rrp_was || 0) : Number(s.rrp);
+        if (!rrp) return null;
+        return Math.min(...Object.entries(d.terms).map(([m, pct]) => (rrp * pct) / Number(m)));
+      };
+
+      const allPrices = [];
+
       data.forEach(d => {
-        const cheapestStorage = d.storages[0];
-        const cheapest = Math.min(
-          ...Object.entries(d.terms).map(([months, pct]) => (cheapestStorage.rrp * pct) / Number(months))
-        );
+        const now = cheapestMonthly(d, false);
+        const was = cheapestMonthly(d, true);
+        const onSale = was != null && now != null && was > now;
+        if (now != null) allPrices.push(now);
 
         const a = document.createElement('a');
         a.className = 'device-tile';
-        a.href = 'product.html?device=' + d.id;
+        a.href = 'product.html?device=' + encodeURIComponent(d.id);
         a.innerHTML =
-          '<div class="thumb"><img src="' + d.colours[0].img + '" alt="' + d.name + '" onerror="this.src=\'data:image/svg+xml;utf8,' +
-            encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23FBF8F3"/><text x="50%" y="50%" font-family="sans-serif" font-size="13" fill="%238B93A1" text-anchor="middle" dominant-baseline="middle">Photo coming soon</text></svg>') +
-          '\'"></div>' +
+          (onSale ? '<span class="save-flag">Save ' + money(was - now) + '/mo</span>' : '') +
+          '<div class="thumb"><img src="' + d.colours[0].img + '" alt="' + d.name + '" onerror="this.onerror=null;this.src=\'' + placeholder + '\'"></div>' +
           '<div class="dn">' + d.name + '</div>' +
-          '<div class="dp">From ' + money(cheapest) + '/mo</div>';
+          '<div class="dp">' + (onSale ? '<s>' + money(was) + '</s>' : '') +
+            'From <b>' + money(now) + '</b>/month</div>';
         grid.appendChild(a);
       });
+
+      // Keep the hero's "from $X/month" honest — it's the real cheapest plan.
+      if (allPrices.length){
+        const el = document.getElementById('hero-from');
+        if (el) el.textContent = money(Math.min(...allPrices));
+      }
     })
     .catch(err => console.error('Could not load featured devices:', err));
 </script>
