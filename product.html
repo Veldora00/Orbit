@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Talaks — Choose your device</title>
+<title>Talaks — Build your plan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,440;9..144,560&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -260,8 +260,22 @@
   let DEVICES = [];
   let state = { deviceId: null, storageIdx:0, colourIdx:0, termIdx:24, cover:false };
 
-  function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
+  // Shows cents only when there are cents to show — Damage Cover can be $9.50/mo,
+  // and rounding that up to $10 would misstate the price.
+  function money(n){
+    const r = Math.round(n * 100) / 100;
+    return '$' + r.toLocaleString('en-AU', r % 1 === 0
+      ? { maximumFractionDigits: 0 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
   function getDevice(){ return DEVICES.find(d => d.id === state.deviceId); }
+
+  // Damage Cover is priced per term (longer term = cheaper monthly cover).
+  // Falls back to the old single care_monthly value if care_terms isn't set yet.
+  function careFor(device, months){
+    if (device.careTerms && device.careTerms[months] != null) return Number(device.careTerms[months]);
+    return Number(device.careMonthly) || 0;
+  }
 
   supabaseClient
     .from('devices')
@@ -275,7 +289,7 @@
       }
       DEVICES = data.map(d => ({
         id: d.id, brand: d.brand, name: d.name, sub: d.sub,
-        careMonthly: d.care_monthly, coverDesc: d.cover_desc,
+        careMonthly: d.care_monthly, careTerms: d.care_terms, coverDesc: d.cover_desc,
         terms: d.terms, storages: d.storages, colours: d.colours,
       }));
 
@@ -302,7 +316,8 @@
     const pct = device.terms[months];
     const total = storage.rrp * pct;
     const monthly = total / months;
-    const coverMonthly = state.cover ? device.careMonthly : 0;
+    const carePrice = careFor(device, months);
+    const coverMonthly = state.cover ? carePrice : 0;
     const monthlyWithCover = monthly + coverMonthly;
 
     document.getElementById('crumb-brand').textContent = device.brand;
@@ -315,9 +330,9 @@
     document.getElementById('stage-img').onerror = function(){ this.onerror=null; this.src = PLACEHOLDER_IMG; };
     document.getElementById('colour-name').textContent = colour.name;
     document.getElementById('sum-total').textContent = money(total) + (state.cover ? ' + ' + money(coverMonthly * months) + ' cover' : '') + ' over term';
-    document.getElementById('sum-cover').textContent = state.cover ? money(device.careMonthly) + '/mo added' : 'Not added';
+    document.getElementById('sum-cover').textContent = state.cover ? money(carePrice) + '/mo added' : 'Not added';
     document.getElementById('cta-price').textContent = money(monthlyWithCover) + '/mo';
-    document.getElementById('cover-price').textContent = '+' + money(device.careMonthly) + '/mo';
+    document.getElementById('cover-price').textContent = '+' + money(carePrice) + '/mo';
     document.querySelector('#cover-toggle span').textContent = device.coverDesc;
 
     const coverCheckbox = document.getElementById('cover-checkbox');
@@ -371,7 +386,8 @@
       const meta = TERM_META[m];
       const p = device.terms[m];
       const tot = storage.rrp * p;
-      const mo = tot / m;
+      // Cover is priced per term, so when it's on, each term shows its own all-in price
+      const mo = tot / m + (state.cover ? careFor(device, m) : 0);
       const row = document.createElement('button');
       row.className = 'term-pill' + (m === months ? ' active' : '');
       row.innerHTML =
