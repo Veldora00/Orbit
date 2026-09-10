@@ -73,6 +73,12 @@
   .model-card .mp{ font-size:13.5px; color:var(--brand-deep); font-weight:600; }
 
   .empty-note{ color:var(--ink-faint); font-size:14px; padding:60px 0; text-align:center; }
+
+  .site-foot{ border-top:1px solid var(--line); padding:32px 0; }
+  .foot-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--ink-faint); }
+  .foot-links{ display:flex; gap:20px; flex-wrap:wrap; font-size:13.5px; }
+  .foot-links a{ color:var(--ink-dim); text-decoration:none; }
+  .foot-links a:hover{ color:var(--ink); }
 </style>
 </head>
 <body>
@@ -122,6 +128,19 @@
     <div class="model-grid" id="model-grid"></div>
   </div>
 </div>
+
+<footer class="site-foot">
+  <div class="wrap foot-row">
+    <div class="foot-links">
+      <a href="index.html#faq">FAQs</a>
+      <a href="terms.html">Terms of Use</a>
+      <a href="terms.html#damage-cover">Damage Cover &amp; fees</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="mailto:info@talaks.com">info@talaks.com</a>
+    </div>
+    <span>© 2026 Talaks. Sydney, Australia.</span>
+  </div>
+</footer>
 
 <script>
   const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
