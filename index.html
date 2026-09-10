@@ -4,16 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Talaks — Flagship phones, on your terms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380;9..144,440;9..144,560&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
-    --ink:#10161F;
-    --ink-soft:#1B2431;
-    --paper:#F4F2EC;
+    --ink:#0D1219;
+    --ink-raised:#161D27;
+    --ink-raised-2:#1D2531;
+    --line: rgba(243,241,234,0.11);
+    --line-strong: rgba(243,241,234,0.22);
+    --paper:#F3F1EA;
+    --paper-dim: rgba(243,241,234,0.64);
+    --paper-faint: rgba(243,241,234,0.4);
     --amber:#D98E3F;
-    --teal:#3F8F82;
-    --line: rgba(244,242,236,0.14);
-    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
-    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --amber-soft:#E9B67C;
+    --teal:#4A9A8C;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -22,115 +31,150 @@
     background:var(--ink);
     color:var(--paper);
     font-family:var(--sans);
-    line-height:1.5;
+    line-height:1.55;
     -webkit-font-smoothing:antialiased;
   }
   a{color:inherit;}
   button{font-family:inherit;}
-  .wrap{max-width:1160px; margin:0 auto; padding:0 28px;}
+  img{display:block;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 32px;}
   @media (max-width:640px){ .wrap{padding:0 20px;} }
 
   nav{
     position:sticky; top:0; z-index:50;
-    background:rgba(16,22,31,0.92);
-    backdrop-filter: blur(8px);
+    background:rgba(13,18,25,0.88);
+    backdrop-filter: blur(10px);
     border-bottom:1px solid var(--line);
   }
   nav .row{
     display:flex; align-items:center; justify-content:space-between;
-    padding:18px 0;
+    padding:20px 0;
   }
-  .brand{ font-family:var(--serif); font-size:22px; letter-spacing:0.2px; font-weight:700; text-decoration:none; color:var(--paper); }
+  .brand{ font-family:var(--serif); font-size:23px; font-weight:560; text-decoration:none; color:var(--paper); letter-spacing:-0.01em; }
   .brand:visited, .brand:link, .brand:hover{ color:var(--paper); }
   .brand span{color:var(--amber);}
-  .navlinks{display:flex; gap:32px; font-size:15px;}
-  .navlinks a{text-decoration:none; opacity:0.85;}
-  .navlinks a:hover{opacity:1;}
+  .navlinks{display:flex; gap:36px; font-size:14.5px;}
+  .navlinks a{text-decoration:none; color:var(--paper-dim); transition:color 0.15s;}
+  .navlinks a:hover{color:var(--paper);}
   .navcta{
-    background:var(--amber); color:var(--ink); padding:10px 20px;
-    border-radius:2px; font-size:14px; font-weight:600; text-decoration:none;
-    border:1px solid var(--amber);
+    background:var(--amber); color:var(--ink); padding:11px 22px;
+    text-decoration:none; font-size:14px; font-weight:600;
   }
-  @media (max-width:760px){ .navlinks{display:none;} }
+  @media (max-width:800px){ .navlinks{display:none;} }
 
-  header.hero{ padding:100px 0 90px; border-bottom:1px solid var(--line); position:relative; }
-  .hero-grid{ display:grid; grid-template-columns: 1.15fr 0.85fr; gap:60px; align-items:end; }
-  @media (max-width:900px){ .hero-grid{grid-template-columns:1fr;} }
+  header.hero{ padding:0; border-bottom:1px solid var(--line); overflow:hidden; }
+  .hero-inner{ display:grid; grid-template-columns:1fr 1fr; align-items:stretch; min-height:640px; }
+  @media (max-width:900px){ .hero-inner{grid-template-columns:1fr; min-height:auto;} }
+
+  .hero-copy{ display:flex; flex-direction:column; justify-content:center; padding:60px 32px 60px 32px; }
+  @media (min-width:1180px){ .hero-copy{ padding-left:calc((100vw - 1180px)/2 + 32px); } }
+
   h1.headline{
-    font-family:var(--serif); font-weight:400; font-size:clamp(38px, 5.4vw, 64px);
-    line-height:1.06; margin:0 0 26px; max-width:15ch;
+    font-family:var(--serif); font-weight:440; font-size:clamp(40px, 4.6vw, 66px);
+    line-height:1.03; margin:0 0 24px; max-width:13ch; letter-spacing:-0.015em;
   }
-  .headline em{font-style:italic; color:var(--amber);}
-  .hero-sub{ font-size:18px; max-width:46ch; opacity:0.82; margin:0 0 34px; }
-  .hero-ctas{display:flex; gap:16px; flex-wrap:wrap;}
+  .headline .accent{ color:var(--amber); font-style:italic; font-weight:380; }
+  .hero-sub{ font-size:17px; max-width:38ch; color:var(--paper-dim); margin:0 0 36px; line-height:1.65; }
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
   .btn-primary{
-    background:var(--amber); color:var(--ink); padding:14px 26px;
-    border-radius:2px; text-decoration:none; font-weight:600; font-size:15px;
-    border:1px solid var(--amber);
+    background:var(--amber); color:var(--ink); padding:15px 28px;
+    text-decoration:none; font-weight:600; font-size:15px;
   }
-  .btn-ghost{
-    padding:14px 26px; border-radius:2px; text-decoration:none; font-weight:600;
-    font-size:15px; border:1px solid var(--line); color:var(--paper);
+  .btn-text{
+    padding:15px 4px; text-decoration:none; font-weight:500;
+    font-size:15px; color:var(--paper-dim); border-bottom:1px solid var(--line-strong);
   }
-  .hero-stat-box{ border:1px solid var(--line); padding:28px; background:var(--ink-soft); }
-  .hero-stat-box .num{ font-family:var(--serif); font-size:52px; color:var(--amber); line-height:1; }
-  .hero-stat-box .cap{font-size:14px; opacity:0.75; margin-top:10px; max-width:28ch;}
-  .hero-stat-box .divider{height:1px; background:var(--line); margin:22px 0;}
-  .hero-stat-row{display:flex; justify-content:space-between; font-size:13px; opacity:0.75; padding:6px 0;}
-  .hero-stat-row b{color:var(--paper); opacity:1; font-weight:600;}
+  .btn-text:hover{ color:var(--paper); border-color:var(--paper-dim); }
 
-  section.how{padding:90px 0; border-bottom:1px solid var(--line);}
-  .section-label{ font-size:13px; letter-spacing:0.5px; color:var(--teal); margin:0 0 14px; font-weight:600; }
-  h2{ font-family:var(--serif); font-weight:400; font-size:clamp(28px,3.4vw,40px); margin:0 0 46px; max-width:22ch; }
-  .steps{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:1px solid var(--line); }
-  @media (max-width:900px){ .steps{grid-template-columns:1fr 1fr;} }
-  @media (max-width:560px){ .steps{grid-template-columns:1fr;} }
-  .step{ padding:28px 24px 28px 0; border-right:1px solid var(--line); }
-  .steps > .step:last-child{border-right:none;}
-  .step .idx{ font-family:var(--serif); font-size:15px; color:var(--amber); margin-bottom:16px; }
-  .step h3{font-size:17px; margin:0 0 10px; font-weight:600;}
-  .step p{font-size:14.5px; opacity:0.75; margin:0;}
+  .hero-stats{ display:flex; gap:36px; margin-top:52px; flex-wrap:wrap; }
+  .hero-stat .num{ font-family:var(--serif); font-size:30px; color:var(--amber); line-height:1; margin-bottom:6px; }
+  .hero-stat .lbl{ font-size:13px; color:var(--paper-faint); max-width:16ch; line-height:1.4; }
 
-  section.featured{padding:90px 0; border-bottom:1px solid var(--line); background:var(--ink-soft);}
-  .device-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); }
+  .hero-photo{
+    position:relative; background:linear-gradient(160deg, #1D2531 0%, #0D1219 100%);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    min-height:420px;
+  }
+  .hero-photo img{
+    width:78%; max-width:420px; object-fit:contain;
+    filter:drop-shadow(0 40px 80px rgba(0,0,0,0.55));
+  }
+  .hero-photo-tag{
+    position:absolute; top:32px; left:32px; font-size:12.5px; letter-spacing:0.02em;
+    color:var(--paper-dim); border:1px solid var(--line-strong); padding:6px 12px;
+    background:rgba(13,18,25,0.5); backdrop-filter:blur(6px);
+  }
+  @media (max-width:900px){ .hero-photo{ min-height:340px; } }
+
+  section.how{padding:110px 0; border-bottom:1px solid var(--line);}
+  .how-head{ max-width:36ch; margin-bottom:72px; }
+  .how-head .eyebrow{ font-size:14.5px; color:var(--teal); margin:0 0 16px; font-family:var(--serif); font-style:italic; }
+  .how-head h2{ font-family:var(--serif); font-weight:440; font-size:clamp(28px,3vw,38px); margin:0; letter-spacing:-0.01em; }
+
+  .steps-flow{ display:flex; flex-direction:column; }
+  .step-row{
+    display:grid; grid-template-columns:120px 1fr 1.3fr; gap:32px; align-items:baseline;
+    padding:36px 0; border-top:1px solid var(--line);
+  }
+  .steps-flow .step-row:last-child{ border-bottom:1px solid var(--line); }
+  @media (max-width:760px){ .step-row{ grid-template-columns:1fr; gap:10px; } }
+  .step-num{ font-family:var(--serif); font-size:56px; font-weight:380; color:var(--ink-raised-2); line-height:1; }
+  .step-title{ font-size:19px; font-weight:600; }
+  .step-desc{ font-size:15px; color:var(--paper-dim); max-width:44ch; line-height:1.65; }
+
+  section.featured{padding:110px 0; border-bottom:1px solid var(--line); background:var(--ink-raised);}
+  .featured-head{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:56px; flex-wrap:wrap; gap:20px; }
+  .featured-head h2{ font-family:var(--serif); font-weight:440; font-size:clamp(28px,3vw,38px); margin:0; max-width:20ch; letter-spacing:-0.01em; }
+  .featured-head p{ color:var(--paper-dim); font-size:15px; max-width:34ch; margin:0; }
+
+  .device-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:2px; background:var(--line); }
   @media (max-width:860px){ .device-grid{grid-template-columns:repeat(2,1fr);} }
   .device-tile{
-    background:var(--ink); padding:26px 22px; text-decoration:none; color:var(--paper);
-    display:block; cursor:pointer;
+    background:var(--ink-raised); padding:32px 26px; text-decoration:none; color:var(--paper);
+    display:block; cursor:pointer; transition:background 0.2s;
   }
-  .device-tile img{ width:100%; height:140px; object-fit:contain; margin-bottom:16px; }
-  .device-tile .dn{ font-size:15px; font-weight:600; margin-bottom:4px; }
-  .device-tile .dp{ font-size:13px; opacity:0.6; }
+  .device-tile:hover{ background:var(--ink-raised-2); }
+  .device-tile img{ width:100%; height:160px; object-fit:contain; margin-bottom:22px; }
+  .device-tile .dn{ font-size:15.5px; font-weight:600; margin-bottom:5px; }
+  .device-tile .dp{ font-size:13.5px; color:var(--paper-faint); }
 
-  section.trust{padding:90px 0; border-bottom:1px solid var(--line);}
-  .trust-grid{display:grid; grid-template-columns:1fr 1fr; gap:60px;}
-  @media (max-width:860px){ .trust-grid{grid-template-columns:1fr;} }
-  .trust-grid p{font-size:16px; opacity:0.8; max-width:52ch;}
-  .trust-list{list-style:none; padding:0; margin:20px 0 0;}
-  .trust-list li{ padding:16px 0; border-top:1px solid var(--line); font-size:15px; opacity:0.85; }
-  .trust-list li b{color:var(--amber); display:block; font-size:14px; margin-bottom:4px; font-weight:600;}
+  section.trust{padding:110px 0; border-bottom:1px solid var(--line);}
+  .trust-grid{display:grid; grid-template-columns:0.85fr 1.15fr; gap:80px;}
+  @media (max-width:860px){ .trust-grid{grid-template-columns:1fr; gap:48px;} }
+  .trust-grid .eyebrow{ font-size:14.5px; color:var(--teal); margin:0 0 16px; font-family:var(--serif); font-style:italic; }
+  .trust-grid h2{ font-family:var(--serif); font-weight:440; font-size:clamp(26px,2.8vw,34px); margin:0 0 20px; letter-spacing:-0.01em; }
+  .trust-grid > div:first-child p{ font-size:15.5px; color:var(--paper-dim); max-width:42ch; line-height:1.7; }
 
-  section.faq{padding:90px 0; border-bottom:1px solid var(--line); background:var(--ink-soft);}
+  .trust-list{ list-style:none; padding:0; margin:0; }
+  .trust-list li{ padding:26px 0; border-top:1px solid var(--line); display:grid; grid-template-columns:28px 1fr; gap:18px; }
+  .trust-list li:last-child{ border-bottom:1px solid var(--line); }
+  .trust-list .mark{ font-family:var(--serif); font-size:15px; color:var(--amber); font-style:italic; }
+  .trust-list b{ display:block; font-size:15.5px; font-weight:600; margin-bottom:6px; }
+  .trust-list span.desc{ font-size:14.5px; color:var(--paper-dim); line-height:1.6; }
+
+  section.faq{padding:110px 0; border-bottom:1px solid var(--line); background:var(--ink-raised);}
+  .faq-head{ margin-bottom:56px; max-width:36ch; }
+  .faq-head .eyebrow{ font-size:14.5px; color:var(--teal); margin:0 0 16px; font-family:var(--serif); font-style:italic; }
+  .faq-head h2{ font-family:var(--serif); font-weight:440; font-size:clamp(28px,3vw,38px); margin:0; letter-spacing:-0.01em; }
   .faq-list{max-width:760px;}
-  details{ border-top:1px solid var(--line); padding:20px 0; }
+  details{ border-top:1px solid var(--line); padding:22px 0; }
   details:last-child{border-bottom:1px solid var(--line);}
-  summary{ cursor:pointer; font-size:16.5px; font-weight:600; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+  summary{ cursor:pointer; font-size:16.5px; font-weight:600; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:20px; }
   summary::-webkit-details-marker{display:none;}
-  summary::after{ content:"+"; font-family:var(--serif); font-size:22px; color:var(--amber); margin-left:20px; flex-shrink:0; }
+  summary::after{ content:"+"; font-family:var(--serif); font-size:24px; font-weight:380; color:var(--amber); flex-shrink:0; }
   details[open] summary::after{content:"–";}
-  details p{font-size:15px; opacity:0.78; margin:14px 0 4px; max-width:64ch; line-height:1.65;}
+  details p{font-size:15px; color:var(--paper-dim); margin:16px 0 4px; max-width:64ch; line-height:1.7;}
 
-  footer{padding:80px 0 50px;}
-  .terms-box{ border:1px solid var(--line); padding:36px; margin-bottom:60px; }
-  .terms-box h3{font-family:var(--serif); font-weight:400; font-size:22px; margin:0 0 18px;}
-  .terms-box ol{padding-left:20px; font-size:14px; opacity:0.78; line-height:1.8;}
-  .terms-box li{margin-bottom:10px;}
+  footer{padding:100px 0 56px;}
+  .terms-box{ border:1px solid var(--line); padding:40px; margin-bottom:64px; }
+  .terms-box h3{font-family:var(--serif); font-weight:440; font-size:22px; margin:0 0 20px; letter-spacing:-0.01em;}
+  .terms-box ol{padding-left:20px; font-size:14px; color:var(--paper-dim); line-height:1.85;}
+  .terms-box li{margin-bottom:11px;}
   .foot-bottom{
     display:flex; justify-content:space-between; align-items:center;
-    padding-top:36px; border-top:1px solid var(--line); font-size:13px; opacity:0.55; flex-wrap:wrap; gap:16px;
+    padding-top:36px; border-top:1px solid var(--line); font-size:13px; color:var(--paper-faint); flex-wrap:wrap; gap:16px;
   }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -148,43 +192,64 @@
 </nav>
 
 <header class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <h1 class="headline">Carry the latest phone. <em>Never own the debt.</em></h1>
-      <p class="hero-sub">Talaks gets you a brand-new iPhone on a fixed monthly plan — no upfront cost, no bank loan, and nothing left owing when your term ends. Hand it back, or start again on the newest model.</p>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <h1 class="headline">Carry the latest phone. <span class="accent">Never own the debt.</span></h1>
+      <p class="hero-sub">A brand-new iPhone or Galaxy flagship on a fixed monthly plan — no upfront cost, no bank loan, nothing left owing when your term ends.</p>
       <div class="hero-ctas">
         <a href="product.html" class="btn-primary">See your monthly price</a>
-        <a href="#how" class="btn-ghost">How it works</a>
+        <a href="#how" class="btn-text">How it works</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">$0</div><div class="lbl">Upfront cost to start</div></div>
+        <div class="hero-stat"><div class="num">Same day</div><div class="lbl">Approval decision</div></div>
+        <div class="hero-stat"><div class="num">None</div><div class="lbl">Ownership required</div></div>
       </div>
     </div>
-    <div class="hero-stat-box">
-      <div class="num">$0</div>
-      <div class="cap">Upfront cost to start a plan — you pay monthly, from day one.</div>
-      <div class="divider"></div>
-      <div class="hero-stat-row"><span>Approval decision</span><b>Same day</b></div>
-      <div class="hero-stat-row"><span>Contract type</span><b>Fixed term</b></div>
-      <div class="hero-stat-row"><span>Ownership required</span><b>None</b></div>
+    <div class="hero-photo">
+      <div class="hero-photo-tag">iPhone 18 Pro — Burgundy</div>
+      <img src="images/Iphone 18 Pro Burgundy.jpg" alt="iPhone 18 Pro in Burgundy">
     </div>
   </div>
 </header>
 
 <section class="how" id="how">
   <div class="wrap">
-    <p class="section-label">HOW IT WORKS</p>
-    <h2>Four steps, and the phone's on its way.</h2>
-    <div class="steps">
-      <div class="step"><div class="idx">01</div><h3>Pick a device</h3><p>Choose an iPhone, storage size, and colour.</p></div>
-      <div class="step"><div class="idx">02</div><h3>Verify your identity</h3><p>A quick ID check — usually done in under two minutes.</p></div>
-      <div class="step"><div class="idx">03</div><h3>Pick a term</h3><p>12, 24 or 36 months. Longer terms bring your monthly price down.</p></div>
-      <div class="step"><div class="idx">04</div><h3>It arrives, you pay monthly</h3><p>Free delivery. At term's end, return it, extend, or move to the newest model.</p></div>
+    <div class="how-head">
+      <p class="eyebrow">How it works</p>
+      <h2>Four steps, and the phone's on its way.</h2>
+    </div>
+    <div class="steps-flow">
+      <div class="step-row">
+        <div class="step-num">01</div>
+        <div class="step-title">Pick a device</div>
+        <div class="step-desc">Choose an iPhone or Samsung Galaxy flagship, storage size, and colour.</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">02</div>
+        <div class="step-title">Verify your identity</div>
+        <div class="step-desc">A quick ID check — no credit check, usually done in under two minutes.</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">03</div>
+        <div class="step-title">Pick a term</div>
+        <div class="step-desc">12, 24 or 36 months. Longer terms bring your monthly price down.</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">04</div>
+        <div class="step-title">It arrives, you pay monthly</div>
+        <div class="step-desc">Free delivery. At term's end, return it, extend, or move to the newest model.</div>
+      </div>
     </div>
   </div>
 </section>
 
 <section class="featured">
   <div class="wrap">
-    <p class="section-label">POPULAR RIGHT NOW</p>
-    <h2>Every plan priced under its retail value.</h2>
+    <div class="featured-head">
+      <h2>Every plan priced under its retail value.</h2>
+      <p>Real devices, real monthly prices, updated live.</p>
+    </div>
     <div class="device-grid" id="featured-grid"></div>
   </div>
 </section>
@@ -192,23 +257,25 @@
 <section class="trust">
   <div class="wrap trust-grid">
     <div>
-      <p class="section-label">THE MODEL</p>
-      <h2 style="margin-bottom:20px;">Why this can cost less than financing one outright.</h2>
+      <p class="eyebrow">The model</p>
+      <h2>Why this can cost less than financing one outright.</h2>
       <p>You're paying for the use of the phone, not buying it. Because Talaks stays the owner, and because every plan is priced at or below the phone's retail price, there's no interest, no finance contract, and nothing owing if you hand it back on time.</p>
     </div>
     <ul class="trust-list">
-      <li><b>No purchase option</b>The device always goes back to us at the end of your term — that's what keeps every plan a straightforward subscription, not a loan.</li>
-      <li><b>Capped exit fee</b>Need out early? The early-exit charge is fixed and disclosed upfront — never the full remaining balance.</li>
-      <li><b>Condition-based Damage Cover</b>Everyday wear is expected. Cover kicks in for accidental damage so a cracked screen doesn't become a large bill.</li>
-      <li><b>Refurbished, not landfilled</b>Returned phones are inspected, refurbished, and given a second lease — which is exactly why the pricing works.</li>
+      <li><span class="mark">01</span><div><b>No purchase option</b><span class="desc">The device always goes back to us at the end of your term — that's what keeps every plan a straightforward subscription, not a loan.</span></div></li>
+      <li><span class="mark">02</span><div><b>Capped exit fee</b><span class="desc">Need out early? The early-exit charge is fixed and disclosed upfront — never the full remaining balance.</span></div></li>
+      <li><span class="mark">03</span><div><b>Condition-based Damage Cover</b><span class="desc">Everyday wear is expected. Cover kicks in for accidental damage so a cracked screen doesn't become a large bill.</span></div></li>
+      <li><span class="mark">04</span><div><b>Refurbished, not landfilled</b><span class="desc">Returned phones are inspected, refurbished, and given a second lease — which is exactly why the pricing works.</span></div></li>
     </ul>
   </div>
 </section>
 
 <section class="faq" id="faq">
   <div class="wrap">
-    <p class="section-label">QUESTIONS</p>
-    <h2>Straight answers before you commit.</h2>
+    <div class="faq-head">
+      <p class="eyebrow">Questions</p>
+      <h2>Straight answers before you commit.</h2>
+    </div>
     <div class="faq-list">
       <details open>
         <summary>Can I keep the phone instead of returning it?</summary>
@@ -277,8 +344,6 @@
 </footer>
 
 <script>
-  // Featured tiles pulled from Supabase (table: devices) — same source the
-  // product/checkout pages and admin panel use. One tile per model.
   function money(n){ return '$' + Math.round(n).toLocaleString('en-AU'); }
 
   const supabaseClient = supabase.createClient(
