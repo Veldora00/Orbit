@@ -135,6 +135,18 @@ window.Talaks = (function () {
       .then(function (res) { return res.data || null; });
   }
 
+  /* Most recent plan, whatever its state. */
+  function latestSubscription(userId) {
+    if (!ready) return offline();
+    return client.from('subscriptions')
+      .select('device_id, storage_gb, colour, term_months, monthly_amount_cents, status, current_period_end, cancel_at, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(function (res) { return res.data || null; });
+  }
+
   /* --- nav chip ---------------------------------------------------------
    * Injected rather than pasted into eight page templates. Pages only need a
    * <nav> with a .row inside; the chip lands at the end of it. The styles ship
@@ -203,5 +215,6 @@ window.Talaks = (function () {
     getProfile: getProfile,
     saveProfile: saveProfile,
     latestVerification: latestVerification,
+    latestSubscription: latestSubscription,
   };
 })();

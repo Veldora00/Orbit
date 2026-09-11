@@ -96,10 +96,15 @@
     <div>
 
       <section class="panel" id="plan">
-        <h2>Your plan</h2>
-        <p class="panel-hint">Active subscriptions and their term.</p>
-        <div class="empty">
-          No active plan yet. <a href="catalog.html">Browse devices</a> to start one.
+        <div class="panel-head">
+          <div>
+            <h2>Your plan</h2>
+            <p class="panel-hint">Your device, its term, and when it ends.</p>
+          </div>
+          <span class="status-pill pending" id="plan-status" style="display:none;">—</span>
+        </div>
+        <div id="plan-body">
+          <div class="empty">Loading…</div>
         </div>
       </section>
 
@@ -193,6 +198,59 @@
   }
 
   // Didit statuses are stored verbatim, so map rather than string-compare in logic.
+  var PLAN_STYLES = {
+    active:    { pill:'done',    label:'Active' },
+    pending:   { pill:'working', label:'Awaiting payment' },
+    past_due:  { pill:'failed',  label:'Payment failed' },
+    completed: { pill:'pending', label:'Term completed' },
+    canceled:  { pill:'pending', label:'Ended' },
+  };
+
+  function money(cents){ return '$' + Math.round(cents / 100).toLocaleString('en-AU'); }
+  function shortDate(iso){
+    if (!iso) return null;
+    return new Date(iso).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+  }
+
+  function renderPlan(sub, deviceName){
+    var pill = document.getElementById('plan-status');
+    var body = document.getElementById('plan-body');
+
+    if (!sub) {
+      pill.style.display = 'none';
+      body.innerHTML = '<div class="empty">No plan yet. <a href="catalog.html">Browse devices</a> to start one.</div>';
+      return;
+    }
+
+    var style = PLAN_STYLES[sub.status] || { pill:'working', label: sub.status };
+    pill.style.display = '';
+    pill.className = 'status-pill ' + style.pill;
+    pill.textContent = style.label;
+
+    var rows =
+      '<div class="kv"><span>Device</span><b>' + (deviceName || sub.device_id) +
+        ' &middot; ' + sub.storage_gb + ' &middot; ' + sub.colour + '</b></div>' +
+      '<div class="kv"><span>Monthly</span><b>' + money(sub.monthly_amount_cents) + '/mo</b></div>' +
+      '<div class="kv"><span>Term</span><b>' + sub.term_months + ' months</b></div>' +
+      '<div class="kv"><span>Damage Cover</span><b>Included</b></div>';
+
+    if (sub.status === 'active') {
+      if (sub.current_period_end) rows += '<div class="kv"><span>Next payment</span><b>' + shortDate(sub.current_period_end) + '</b></div>';
+      if (sub.cancel_at) rows += '<div class="kv"><span>Term ends</span><b>' + shortDate(sub.cancel_at) + '</b></div>';
+      rows += '<p class="form-note">Your plan stops on its own at the end of the term — it will not roll on month to month. ' +
+              'We\u2019ll be in touch beforehand to arrange the return, an extension, or an upgrade.</p>';
+    } else if (sub.status === 'past_due') {
+      rows += '<p class="form-note" style="color:var(--danger);">A payment didn\u2019t go through. Update your card and we\u2019ll retry automatically — ' +
+              'email <a href="mailto:info@talaks.com" style="color:var(--brand-deep);">info@talaks.com</a> if you need a hand.</p>';
+    } else if (sub.status === 'pending') {
+      rows += '<p class="form-note">We\u2019re waiting on your first payment to clear. This page updates on its own once it does.</p>';
+    } else if (sub.status === 'completed') {
+      rows += '<p class="form-note">This term has finished. <a href="catalog.html" style="color:var(--brand-deep);">Start a new plan</a> whenever you\u2019re ready.</p>';
+    }
+
+    body.innerHTML = rows;
+  }
+
   var STATUS_STYLES = {
     'Approved':    { pill:'done',    label:'Verified' },
     'Declined':    { pill:'failed',  label:'Declined' },
@@ -264,10 +322,19 @@
     document.getElementById('who').textContent = user.email;
     document.getElementById('sec-email').textContent = user.email;
 
-    var [profile, verification] = await Promise.all([
+    var [profile, verification, subscription] = await Promise.all([
       Talaks.getProfile(user.id),
       Talaks.latestVerification(user.id),
+      Talaks.latestSubscription(user.id),
     ]);
+
+    var deviceName = null;
+    if (subscription && subscription.device_id) {
+      var dev = await Talaks.client.from('devices').select('name')
+        .eq('id', subscription.device_id).maybeSingle();
+      deviceName = dev.data && dev.data.name;
+    }
+    renderPlan(subscription, deviceName);
 
     if (profile) {
       document.getElementById('pf-name').value     = profile.full_name || '';
