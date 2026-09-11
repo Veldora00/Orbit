@@ -123,16 +123,28 @@ window.Talaks = (function () {
 
   /* --- verification ----------------------------------------------------- */
 
-  /* Latest verification row for this user, whatever its state. */
+  /* Verification state for this user.
+   *
+   * An Approved row WINS over a newer unfinished one. Someone who verified in
+   * March and then idly clicked the button again in June is still verified —
+   * reading only the most recent row would tell them otherwise and send them
+   * through an ID check they don't need. Verification here does not expire:
+   * once we know who someone is, we know. */
   function latestVerification(userId) {
     if (!ready) return offline();
     return client.from('verifications')
-      .select('session_id, status, created_at')
+      .select('session_id, status, created_at, manual_override')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(function (res) { return res.data || null; });
+      .limit(10)
+      .then(function (res) {
+        var rows = res.data || [];
+        if (!rows.length) return null;
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i].status === 'Approved') return rows[i];
+        }
+        return rows[0];
+      });
   }
 
   /* Most recent plan, whatever its state. */

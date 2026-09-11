@@ -53,6 +53,20 @@
   .error-msg{ color:var(--red); font-size:13.5px; margin-top:14px; }
   .hidden{ display:none !important; }
 
+  /* Customers tab */
+  .cust-row{ background:var(--ink-raised); border-radius:12px; padding:16px 20px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .cust-main{ min-width:220px; }
+  .cust-email{ font-weight:600; font-size:14.5px; }
+  .cust-sub{ font-size:12.5px; color:var(--paper-faint); margin-top:3px; }
+  .cust-tags{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .tag{ font-size:11.5px; padding:4px 10px; border-radius:999px; border:1px solid var(--line-strong);
+    color:var(--paper-dim); white-space:nowrap; }
+  .tag.ok{ border-color:var(--teal); color:var(--teal); }
+  .tag.warn{ border-color:var(--amber); color:var(--amber-soft); }
+  .tag.bad{ border-color:var(--red); color:var(--red); }
+  .cust-reason{ font-size:12px; color:var(--paper-faint); font-style:italic; margin-top:5px; }
+
   /* ---- device list ---- */
   .tabs{ display:flex; gap:4px; margin-bottom:36px; border-bottom:1px solid var(--line); }
   .tab{
@@ -145,6 +159,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="devices">Devices</button>
     <button class="tab" data-tab="journal">Journal</button>
+    <button class="tab" data-tab="customers">Customers</button>
   </div>
 
   <!-- ============ DEVICES ============ -->
@@ -175,6 +190,21 @@
     <div class="device-list" id="post-list"></div>
 
     <div class="form-box hidden" id="post-form-box"></div>
+  </section>
+
+  <!-- ============ CUSTOMERS ============ -->
+  <section id="tab-customers" class="hidden">
+    <h1 class="page-title">Customers</h1>
+    <p class="page-sub">Everyone with an account, and where they've got to. Approving someone here
+      bypasses Didit — it's for people verified another way, or checks that failed for a bad reason.
+      Every approval records who did it and why, so it can never be mistaken for a real Didit pass.</p>
+
+    <div class="toolbar">
+      <span id="cust-count" style="font-size:13.5px; color:var(--paper-dim);"></span>
+      <button class="btn-sm" id="cust-refresh">Refresh</button>
+    </div>
+
+    <div class="device-list" id="cust-list"></div>
   </section>
 </main>
 
@@ -605,8 +635,103 @@
     document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
     document.getElementById('tab-devices').classList.toggle('hidden', t.dataset.tab !== 'devices');
     document.getElementById('tab-journal').classList.toggle('hidden', t.dataset.tab !== 'journal');
+    document.getElementById('tab-customers').classList.toggle('hidden', t.dataset.tab !== 'customers');
     if (t.dataset.tab === 'journal') loadPosts();
+    if (t.dataset.tab === 'customers') loadCustomers();
   });
+
+  // ================= CUSTOMERS =================
+  const custList  = document.getElementById('cust-list');
+  const custCount = document.getElementById('cust-count');
+
+  const PLAN_LABELS = {
+    active:'Plan active', pending:'Awaiting payment', past_due:'Payment failed',
+    completed:'Term completed', canceled:'Plan ended',
+  };
+
+  function esc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  async function loadCustomers(){
+    custList.innerHTML = '<div class="cust-row"><span class="cust-sub">Loading…</span></div>';
+    const { data, error } = await supabaseClient.rpc('admin_list_customers');
+
+    if (error) {
+      custList.innerHTML = '<div class="cust-row"><span class="cust-sub" style="color:var(--red);">'
+        + esc(error.message) + '</span></div>';
+      return;
+    }
+
+    const rows = data || [];
+    custCount.textContent = rows.length + (rows.length === 1 ? ' account' : ' accounts')
+      + ' · ' + rows.filter(r => r.is_verified).length + ' verified';
+
+    custList.innerHTML = rows.map(function(c){
+      const tags = [];
+
+      if (c.is_verified) {
+        tags.push(c.granted_by_staff
+          ? '<span class="tag warn">Approved by staff</span>'
+          : '<span class="tag ok">Verified by Didit</span>');
+      } else {
+        tags.push('<span class="tag">Not verified</span>');
+      }
+
+      tags.push(c.address_complete
+        ? '<span class="tag ok">Address on file</span>'
+        : '<span class="tag">No address</span>');
+
+      if (c.plan_status) {
+        const cls = c.plan_status === 'active' ? 'ok'
+                  : c.plan_status === 'past_due' ? 'bad' : '';
+        tags.push('<span class="tag ' + cls + '">'
+          + esc(PLAN_LABELS[c.plan_status] || c.plan_status) + '</span>');
+      }
+
+      // Only offer approval to someone who isn't already through.
+      const action = c.is_verified
+        ? ''
+        : '<button class="btn-sm" style="border-color:var(--amber); color:var(--amber);"'
+          + ' onclick="grantVerification(\'' + esc(c.email) + '\')">Approve identity</button>';
+
+      return '<div class="cust-row">'
+        + '<div class="cust-main">'
+        +   '<div class="cust-email">' + esc(c.email) + '</div>'
+        +   '<div class="cust-sub">' + esc(c.full_name || 'No name yet')
+        +     (c.device_id ? ' · ' + esc(c.device_id) : '') + '</div>'
+        +   (c.granted_by_staff && c.override_reason
+              ? '<div class="cust-reason">Reason: ' + esc(c.override_reason) + '</div>' : '')
+        + '</div>'
+        + '<div class="cust-tags">' + tags.join('') + '</div>'
+        + '<div>' + action + '</div>'
+        + '</div>';
+    }).join('') || '<div class="cust-row"><span class="cust-sub">No accounts yet.</span></div>';
+  }
+
+  async function grantVerification(email){
+    const reason = prompt(
+      'Approving ' + email + ' without a Didit check.\n\n' +
+      'Why? This is recorded against your account permanently.',
+      ''
+    );
+    if (reason === null) return;                 // cancelled
+    if (reason.trim().length < 5) {
+      alert('A reason of at least 5 characters is required.');
+      return;
+    }
+
+    const { error } = await supabaseClient.rpc('admin_grant_verification', {
+      p_email: email, p_reason: reason.trim(),
+    });
+
+    if (error) { alert('Could not approve: ' + error.message); return; }
+    loadCustomers();
+  }
+
+  document.getElementById('cust-refresh').onclick = loadCustomers;
 
   // ================= JOURNAL =================
   const postList = document.getElementById('post-list');
