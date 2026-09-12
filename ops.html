@@ -1,0 +1,694 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Talaks — Operations</title>
+
+<!--
+  Talaks operations console.
+
+  Deliberately separate from admin.html. That page changes what the shop
+  SELLS — devices, prices, terms, journal posts — and a mistake there is
+  visible to every visitor within seconds. This page looks at what the shop
+  HAS SOLD: real customers, real money, real hardware that has left the
+  building.
+
+  Two different jobs, two different kinds of mistake, so two different pages.
+
+  Everything here is read-only except four actions, and all four are things
+  only a human can know: a parcel was posted, a device came back, a note is
+  worth keeping, an ID check passed despite what the robot said. Nothing on
+  this page moves money, issues a refund, or edits a customer record — do
+  that in Stripe, where it is logged properly.
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#161A20; --ink-dim:#5B6472; --ink-faint:#8B93A1;
+    --paper:#FBF9F6; --card:#FFFFFF; --line:rgba(22,26,32,.10);
+    --line-strong:rgba(22,26,32,.18);
+    --orange:#E8471F; --teal:#1E9E82; --amber:#B4761A; --red:#C4341C;
+    --wash:#F5F1EB;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:14px/1.55 Inter,-apple-system,BlinkMacSystemFont,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:440;margin:0}
+  a{color:var(--orange)}
+  button{font:inherit}
+
+  /* ---- chrome ---- */
+  header{background:var(--card);border-bottom:1px solid var(--line);
+         position:sticky;top:0;z-index:20}
+  .bar{max-width:1180px;margin:0 auto;padding:14px 24px;
+       display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .brand{font-family:Fraunces,Georgia,serif;font-size:19px;letter-spacing:-.01em}
+  .brand span{color:var(--orange)}
+  .tag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--ink-faint);border:1px solid var(--line-strong);
+       border-radius:999px;padding:3px 9px}
+  .bar .sp{flex:1}
+  .bar a.small{font-size:13px;color:var(--ink-dim);text-decoration:none}
+  .bar a.small:hover{color:var(--ink)}
+
+  nav.tabs{max-width:1180px;margin:0 auto;padding:0 24px;display:flex;gap:2px;flex-wrap:wrap}
+  nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;
+       padding:11px 15px;color:var(--ink-dim);cursor:pointer;font-size:13.5px}
+  nav.tabs button:hover{color:var(--ink)}
+  nav.tabs button.on{color:var(--ink);border-bottom-color:var(--orange);font-weight:500}
+  nav.tabs .count{display:inline-block;margin-left:7px;font-size:11px;
+       background:var(--orange);color:#fff;border-radius:999px;padding:1px 6px;
+       font-weight:600;vertical-align:1px}
+  nav.tabs .count.zero{background:var(--line-strong);color:var(--ink-faint)}
+
+  main{max-width:1180px;margin:0 auto;padding:26px 24px 80px}
+  section[hidden]{display:none}
+
+  /* ---- pieces ---- */
+  .totals{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+          margin-bottom:26px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .stat .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}
+  .stat .v{font-family:Fraunces,Georgia,serif;font-size:24px;margin-top:3px}
+
+  .block{background:var(--card);border:1px solid var(--line);border-radius:14px;
+         margin-bottom:20px;overflow:hidden}
+  .block > h2{font-size:16px;padding:15px 18px;border-bottom:1px solid var(--line);
+              display:flex;align-items:center;gap:10px}
+  .block > h2 .n{font-family:Inter,sans-serif;font-size:11.5px;font-weight:600;
+              background:var(--wash);color:var(--ink-dim);border-radius:999px;padding:2px 8px}
+  .block > h2 .why{font-family:Inter,sans-serif;font-size:12.5px;font-weight:400;
+              color:var(--ink-faint);margin-left:auto;text-align:right}
+
+  .row{padding:14px 18px;border-bottom:1px solid var(--line);
+       display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .row:last-child{border-bottom:0}
+  .row .main{flex:1;min-width:200px}
+  .row .name{font-weight:500}
+  .row .sub{color:var(--ink-dim);font-size:13px;margin-top:2px}
+  .row .addr{color:var(--ink-faint);font-size:12.5px;margin-top:3px}
+  .row .act{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  .empty{padding:26px 18px;color:var(--ink-faint);font-size:13.5px;text-align:center}
+
+  .btn{border:1px solid var(--line-strong);background:var(--card);color:var(--ink);
+       border-radius:999px;padding:7px 15px;cursor:pointer;font-size:13px;
+       transition:border-color .15s,background .15s}
+  .btn:hover{border-color:var(--ink-faint);background:var(--wash)}
+  .btn.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+  .btn.primary:hover{background:#cf3d18;border-color:#cf3d18}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.sm{padding:5px 11px;font-size:12.5px}
+
+  .pill{font-size:11.5px;border-radius:999px;padding:2px 9px;border:1px solid;
+        display:inline-block;white-space:nowrap}
+  .pill.ok{color:var(--teal);border-color:rgba(30,158,130,.4)}
+  .pill.warn{color:var(--amber);border-color:rgba(180,118,26,.4)}
+  .pill.bad{color:var(--red);border-color:rgba(196,52,28,.4)}
+  .pill.dim{color:var(--ink-faint);border-color:var(--line-strong)}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;
+     color:var(--ink-faint);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--line);
+     white-space:nowrap}
+  td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr.click{cursor:pointer}
+  tbody tr.click:hover{background:var(--wash)}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .scroll{overflow-x:auto}
+
+  .tools{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .tools input,.tools select{font:inherit;padding:8px 13px;border:1px solid var(--line-strong);
+       border-radius:999px;background:var(--card);color:var(--ink);min-width:0}
+  .tools input{flex:1;min-width:170px}
+
+  /* ---- detail drawer ---- */
+  .scrim{position:fixed;inset:0;background:rgba(22,26,32,.34);z-index:40}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);
+          background:var(--paper);z-index:41;overflow-y:auto;
+          box-shadow:-10px 0 40px rgba(22,26,32,.13)}
+  .drawer .dh{position:sticky;top:0;background:var(--card);
+          border-bottom:1px solid var(--line);padding:16px 20px;
+          display:flex;align-items:center;gap:12px}
+  .drawer .dh h2{font-size:17px;flex:1}
+  .drawer .body{padding:20px}
+  .drawer h3{font-size:12px;font-family:Inter,sans-serif;font-weight:600;
+          letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);
+          margin:22px 0 9px}
+  .drawer h3:first-child{margin-top:0}
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font-size:13.5px}
+  .kv dt{color:var(--ink-dim)}
+  .kv dd{margin:0}
+  .note{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:11px 13px;margin-bottom:8px;font-size:13.5px}
+  .note .meta{color:var(--ink-faint);font-size:11.5px;margin-top:5px}
+  textarea{width:100%;font:inherit;padding:10px 13px;border:1px solid var(--line-strong);
+        border-radius:10px;background:var(--card);color:var(--ink);resize:vertical;min-height:66px}
+
+  .msg{padding:11px 15px;border-radius:10px;font-size:13.5px;margin-bottom:14px}
+  .msg.err{background:#FDEEEA;color:var(--red)}
+  .msg.ok{background:#EAF6F2;color:#16705C}
+  .loading{padding:60px 0;text-align:center;color:var(--ink-faint)}
+
+  @media(max-width:640px){
+    .bar,nav.tabs,main{padding-left:16px;padding-right:16px}
+    .kv{grid-template-columns:1fr;gap:2px 0}
+    .kv dt{margin-top:8px}
+  }
+</style>
+
+<header>
+  <div class="bar">
+    <div class="brand">Tal<span>a</span>ks</div>
+    <div class="tag">Operations</div>
+    <div class="sp"></div>
+    <a class="small" href="admin.html">Catalogue &amp; pricing →</a>
+    <a class="small" href="#" id="signout">Sign out</a>
+  </div>
+  <nav class="tabs" id="tabs" hidden>
+    <button data-tab="queue" class="on">Queue <span class="count zero" id="c-queue">0</span></button>
+    <button data-tab="orders">Orders</button>
+    <button data-tab="payments">Payments</button>
+    <button data-tab="customers">Customers</button>
+  </nav>
+</header>
+
+<main>
+  <div id="gate" class="loading">Checking your access…</div>
+
+  <!-- ===================================================== QUEUE ===== -->
+  <section id="tab-queue" hidden>
+    <div class="totals" id="totals"></div>
+
+    <div class="block">
+      <h2>Ready to post <span class="n" id="n-ship">0</span>
+        <span class="why">Paid for, not yet sent</span></h2>
+      <div id="q-ship"></div>
+    </div>
+
+    <div class="block">
+      <h2>Payment failed <span class="n" id="n-fail">0</span>
+        <span class="why">We still own the device</span></h2>
+      <div id="q-fail"></div>
+    </div>
+
+    <div class="block">
+      <h2>Identity unresolved <span class="n" id="n-ver">0</span>
+        <span class="why">Started an ID check, never passed</span></h2>
+      <div id="q-ver"></div>
+    </div>
+
+    <div class="block">
+      <h2>Returns due <span class="n" id="n-ret">0</span>
+        <span class="why">Term ending or ended, device still out</span></h2>
+      <div id="q-ret"></div>
+    </div>
+  </section>
+
+  <!-- ==================================================== ORDERS ===== -->
+  <section id="tab-orders" hidden>
+    <div class="tools">
+      <input id="o-search" placeholder="Search name, email, device, tracking…">
+      <select id="o-status">
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="past_due">Past due</option>
+        <option value="completed">Completed</option>
+        <option value="canceled">Cancelled</option>
+      </select>
+    </div>
+    <div class="block scroll"><table>
+      <thead><tr>
+        <th>Customer</th><th>Device</th><th>Term</th><th class="num">Monthly</th>
+        <th>Status</th><th>ID</th><th>Shipped</th><th>Term ends</th>
+      </tr></thead>
+      <tbody id="o-rows"></tbody>
+    </table></div>
+  </section>
+
+  <!-- ================================================== PAYMENTS ===== -->
+  <section id="tab-payments" hidden>
+    <div class="block scroll"><table>
+      <thead><tr>
+        <th>Paid</th><th>Customer</th><th class="num">Amount</th>
+        <th>Reason</th><th>Invoice</th>
+      </tr></thead>
+      <tbody id="p-rows"></tbody>
+    </table></div>
+  </section>
+
+  <!-- ================================================= CUSTOMERS ===== -->
+  <section id="tab-customers" hidden>
+    <div class="tools"><input id="c-search" placeholder="Search name or email…"></div>
+    <div class="block scroll"><table>
+      <thead><tr>
+        <th>Customer</th><th>Contact</th><th>Address</th>
+        <th>ID check</th><th class="num">Plans</th><th class="num">Paid to date</th>
+      </tr></thead>
+      <tbody id="c-rows"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/auth.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- tiny helpers ------------------------------------------- */
+  var $ = function (id) { return document.getElementById(id); };
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+  function money(cents, cur) {
+    if (cents == null) return '—';
+    return (cur === 'AUD' || !cur ? '$' : cur + ' ') +
+      (cents / 100).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function day(ts) {
+    if (!ts) return '—';
+    return new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function ago(ts) {
+    if (!ts) return '';
+    var d = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+    if (d <= 0) return 'today';
+    return d === 1 ? '1 day ago' : d + ' days ago';
+  }
+
+  var STATUS = {
+    active:    ['ok',   'Active'],
+    past_due:  ['bad',  'Past due'],
+    completed: ['dim',  'Completed'],
+    canceled:  ['dim',  'Cancelled'],
+    pending:   ['warn', 'Pending'],
+  };
+  function statusPill(s) {
+    var m = STATUS[s] || ['dim', s || '—'];
+    return '<span class="pill ' + m[0] + '">' + esc(m[1]) + '</span>';
+  }
+  function idPill(status, manual) {
+    if (status === 'Approved') {
+      return manual
+        ? '<span class="pill warn">By staff</span>'
+        : '<span class="pill ok">Verified</span>';
+    }
+    if (!status) return '<span class="pill dim">None</span>';
+    return '<span class="pill warn">' + esc(status) + '</span>';
+  }
+
+  /* ---------- state --------------------------------------------------- */
+  var db = null;              // supabase client
+  var ORDERS = [], PAYMENTS = [], QUEUE = null;
+
+  /* ---------- boot ---------------------------------------------------- */
+  if (!window.Talaks || !Talaks.ready) {
+    $('gate').textContent = 'Cannot reach the server. Check your connection and reload.';
+    return;
+  }
+  db = Talaks.client;
+
+  $('signout').addEventListener('click', function (e) {
+    e.preventDefault(); Talaks.signOut();
+  });
+
+  Talaks.requireAuth().then(function (session) {
+    if (!session) return;                       // requireAuth already redirected
+    return db.rpc('is_admin').then(function (res) {
+      if (res.error || !res.data) {
+        $('gate').innerHTML =
+          '<p style="font-size:15px;color:var(--ink)">This account is not an operator.</p>' +
+          '<p>Signed in as ' + esc(session.user.email) + '. ' +
+          '<a href="#" id="so2">Sign out</a></p>';
+        var so2 = $('so2');
+        if (so2) so2.addEventListener('click', function (e) { e.preventDefault(); Talaks.signOut(); });
+        return;
+      }
+      $('gate').hidden = true;
+      $('tabs').hidden = false;
+      return loadAll();
+    });
+  });
+
+  /* ---------- tabs ----------------------------------------------------- */
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (x) {
+        x.classList.toggle('on', x === b);
+      });
+      ['queue', 'orders', 'payments', 'customers'].forEach(function (t) {
+        $('tab-' + t).hidden = (t !== b.dataset.tab);
+      });
+    });
+  });
+
+  /* ---------- load ------------------------------------------------------ */
+  function loadAll() {
+    return Promise.all([
+      db.rpc('admin_ops_queue'),
+      db.rpc('admin_ops_orders'),
+      db.rpc('admin_ops_payments'),
+    ]).then(function (r) {
+      var bad = r.find(function (x) { return x.error; });
+      if (bad) { $('gate').hidden = false; $('gate').textContent = 'Could not load: ' + bad.error.message; return; }
+      QUEUE = r[0].data || {};
+      ORDERS = r[1].data || [];
+      PAYMENTS = r[2].data || [];
+      renderQueue(); renderOrders(); renderPayments(); renderCustomers();
+      $('tab-queue').hidden = false;
+    });
+  }
+  function reload() { return loadAll(); }
+
+  /* ================================================== QUEUE ============ */
+  function renderQueue() {
+    var t = QUEUE.totals || {};
+    $('totals').innerHTML = [
+      ['Active plans', t.active || 0],
+      ['Monthly recurring', money(t.mrr_cents || 0, 'AUD')],
+      ['Devices out', t.devices_out || 0],
+      ['Past due', t.past_due || 0],
+      ['Terms completed', t.completed || 0],
+    ].map(function (s) {
+      return '<div class="stat"><div class="k">' + s[0] + '</div><div class="v">' + s[1] + '</div></div>';
+    }).join('');
+
+    var ship = QUEUE.to_ship || [], fail = QUEUE.payment_failed || [],
+        ver  = QUEUE.verification_waiting || [], ret = QUEUE.returns_due || [];
+
+    var total = ship.length + fail.length + ver.length + ret.length;
+    var c = $('c-queue');
+    c.textContent = total;
+    c.classList.toggle('zero', total === 0);
+
+    $('n-ship').textContent = ship.length;
+    $('n-fail').textContent = fail.length;
+    $('n-ver').textContent  = ver.length;
+    $('n-ret').textContent  = ret.length;
+
+    /* Ready to post — the one with an action attached. */
+    $('q-ship').innerHTML = ship.length ? ship.map(function (r) {
+      return '<div class="row">' +
+        '<div class="main">' +
+          '<div class="name">' + esc(r.full_name || r.email) + '</div>' +
+          '<div class="sub">' + esc(r.device) + ' · ' + esc(r.storage_gb || '') +
+            ' · ' + esc(r.colour || '') + '</div>' +
+          '<div class="addr">' + esc(r.address || 'No delivery address on file') + '</div>' +
+        '</div>' +
+        '<div class="act">' +
+          '<span class="pill dim">Paid ' + ago(r.dispatched_at) + '</span>' +
+          '<button class="btn primary sm" data-ship="' + esc(r.id) + '">Mark posted</button>' +
+        '</div></div>';
+    }).join('') : '<div class="empty">Nothing waiting to go out.</div>';
+
+    $('q-fail').innerHTML = fail.length ? fail.map(function (r) {
+      return '<div class="row"><div class="main">' +
+        '<div class="name">' + esc(r.full_name || r.email) + '</div>' +
+        '<div class="sub">' + esc(r.device) + ' · ' + money(r.monthly_amount_cents, 'AUD') + '/mo' +
+        ' · due ' + day(r.current_period_end) + '</div></div>' +
+        '<div class="act"><span class="pill bad">Retry in Stripe</span></div></div>';
+    }).join('') : '<div class="empty">All payments current.</div>';
+
+    $('q-ver').innerHTML = ver.length ? ver.map(function (r) {
+      return '<div class="row"><div class="main">' +
+        '<div class="name">' + esc(r.full_name || r.email) + '</div>' +
+        '<div class="sub">' + esc(r.status) + ' · started ' + ago(r.created_at) + '</div></div>' +
+        '<div class="act">' +
+        '<button class="btn sm" data-grant="' + esc(r.email) + '">Approve manually</button>' +
+        '</div></div>';
+    }).join('') : '<div class="empty">No one stuck in verification.</div>';
+
+    $('q-ret').innerHTML = ret.length ? ret.map(function (r) {
+      return '<div class="row"><div class="main">' +
+        '<div class="name">' + esc(r.full_name || r.email) + '</div>' +
+        '<div class="sub">' + esc(r.device) + ' · term ends ' + day(r.cancel_at) + '</div></div>' +
+        '<div class="act">' +
+        '<button class="btn sm" data-return="' + esc(r.id) + '">Mark returned</button>' +
+        '</div></div>';
+    }).join('') : '<div class="empty">No returns outstanding.</div>';
+  }
+
+  /* ================================================= ORDERS ============ */
+  function filteredOrders() {
+    var q = $('o-search').value.trim().toLowerCase();
+    var s = $('o-status').value;
+    return ORDERS.filter(function (o) {
+      if (s && o.status !== s) return false;
+      if (!q) return true;
+      return [o.full_name, o.email, o.device_name, o.device_id, o.tracking_ref,
+              o.storage_gb, o.colour]
+        .join(' ').toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function renderOrders() {
+    var rows = filteredOrders();
+    $('o-rows').innerHTML = rows.length ? rows.map(function (o) {
+      return '<tr class="click" data-open="' + esc(o.id) + '">' +
+        '<td><strong>' + esc(o.full_name || '—') + '</strong><br>' +
+          '<span style="color:var(--ink-dim);font-size:12.5px">' + esc(o.email) + '</span></td>' +
+        '<td>' + esc(o.device_name || o.device_id || '—') + '<br>' +
+          '<span style="color:var(--ink-dim);font-size:12.5px">' +
+          esc([o.storage_gb, o.colour].filter(Boolean).join(' · ')) + '</span></td>' +
+        '<td>' + o.term_months + ' mo</td>' +
+        '<td class="num">' + money(o.monthly_amount_cents, 'AUD') + '</td>' +
+        '<td>' + statusPill(o.status) + '</td>' +
+        '<td>' + idPill(o.verification_status, o.verification_manual) + '</td>' +
+        '<td>' + (o.shipped_at ? day(o.shipped_at) : '<span class="pill warn">Not sent</span>') + '</td>' +
+        '<td>' + day(o.cancel_at) + '</td></tr>';
+    }).join('') : '<tr><td colspan="8" class="empty">No orders match.</td></tr>';
+  }
+  $('o-search').addEventListener('input', renderOrders);
+  $('o-status').addEventListener('change', renderOrders);
+
+  /* =============================================== PAYMENTS ============ */
+  function renderPayments() {
+    var byUser = {};
+    ORDERS.forEach(function (o) { byUser[o.user_id] = o; });
+
+    $('p-rows').innerHTML = PAYMENTS.length ? PAYMENTS.map(function (p) {
+      var o = byUser[p.user_id] || {};
+      var reason = p.billing_reason === 'subscription_create' ? 'First payment'
+                 : p.billing_reason === 'subscription_cycle' ? 'Monthly'
+                 : (p.billing_reason || '—');
+      return '<tr>' +
+        '<td>' + day(p.paid_at) + '</td>' +
+        '<td>' + esc(o.full_name || o.email || '—') + '</td>' +
+        '<td class="num">' + money(p.amount_cents, p.currency) + '</td>' +
+        '<td>' + esc(reason) + '</td>' +
+        '<td>' + (p.hosted_url
+            ? '<a href="' + esc(p.hosted_url) + '" target="_blank" rel="noopener">View</a>'
+            : '<span style="color:var(--ink-faint)">' + esc(p.invoice_id || '') + '</span>') +
+        '</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="empty">No payments yet.</td></tr>';
+  }
+
+  /* ============================================== CUSTOMERS ============ */
+  function renderCustomers() {
+    var q = $('c-search').value.trim().toLowerCase();
+    var paid = {};
+    PAYMENTS.forEach(function (p) {
+      paid[p.user_id] = (paid[p.user_id] || 0) + (p.amount_cents || 0);
+    });
+
+    var seen = {}, list = [];
+    ORDERS.forEach(function (o) {
+      if (seen[o.user_id]) { seen[o.user_id].plans++; return; }
+      seen[o.user_id] = { o: o, plans: 1 };
+      list.push(seen[o.user_id]);
+    });
+
+    var rows = list.filter(function (c) {
+      if (!q) return true;
+      return [c.o.full_name, c.o.email].join(' ').toLowerCase().indexOf(q) !== -1;
+    });
+
+    $('c-rows').innerHTML = rows.length ? rows.map(function (c) {
+      var o = c.o;
+      var addr = [o.address_line, o.suburb, o.state, o.postcode].filter(Boolean).join(', ');
+      return '<tr>' +
+        '<td><strong>' + esc(o.full_name || '—') + '</strong></td>' +
+        '<td>' + esc(o.email) + (o.phone ? '<br><span style="color:var(--ink-dim);font-size:12.5px">' +
+          esc(o.phone) + '</span>' : '') + '</td>' +
+        '<td style="color:var(--ink-dim)">' + esc(addr || '—') + '</td>' +
+        '<td>' + idPill(o.verification_status, o.verification_manual) + '</td>' +
+        '<td class="num">' + c.plans + '</td>' +
+        '<td class="num">' + money(paid[o.user_id] || 0, 'AUD') + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="empty">No customers match.</td></tr>';
+  }
+  $('c-search').addEventListener('input', renderCustomers);
+
+  /* ================================================= DRAWER ============ */
+  function closeDrawer() {
+    var s = document.querySelector('.scrim'), d = document.querySelector('.drawer');
+    if (s) s.remove(); if (d) d.remove();
+  }
+
+  function openDrawer(id) {
+    var o = ORDERS.filter(function (x) { return x.id === id; })[0];
+    if (!o) return;
+    closeDrawer();
+
+    var scrim = document.createElement('div');
+    scrim.className = 'scrim';
+    scrim.addEventListener('click', closeDrawer);
+
+    var d = document.createElement('div');
+    d.className = 'drawer';
+    var addr = [o.address_line, o.suburb, o.state, o.postcode].filter(Boolean).join(', ');
+    var mine = PAYMENTS.filter(function (p) { return p.subscription_id === o.id; });
+    var total = mine.reduce(function (a, p) { return a + (p.amount_cents || 0); }, 0);
+
+    d.innerHTML =
+      '<div class="dh"><h2>' + esc(o.full_name || o.email) + '</h2>' +
+        '<button class="btn sm" id="dclose">Close</button></div>' +
+      '<div class="body">' +
+        '<div id="dmsg"></div>' +
+
+        '<h3>Plan</h3><dl class="kv">' +
+          '<dt>Device</dt><dd>' + esc(o.device_name || o.device_id || '—') + ' · ' +
+            esc([o.storage_gb, o.colour].filter(Boolean).join(' · ')) + '</dd>' +
+          '<dt>Term</dt><dd>' + o.term_months + ' months · ' +
+            money(o.monthly_amount_cents, 'AUD') + '/mo · total ' +
+            money(o.monthly_amount_cents * o.term_months, 'AUD') + '</dd>' +
+          '<dt>Status</dt><dd>' + statusPill(o.status) + '</dd>' +
+          '<dt>Started</dt><dd>' + day(o.created_at) + '</dd>' +
+          '<dt>Next charge</dt><dd>' + day(o.current_period_end) + '</dd>' +
+          '<dt>Term ends</dt><dd>' + day(o.cancel_at) + '</dd>' +
+        '</dl>' +
+
+        '<h3>Customer</h3><dl class="kv">' +
+          '<dt>Email</dt><dd>' + esc(o.email) + '</dd>' +
+          '<dt>Phone</dt><dd>' + esc(o.phone || '—') + '</dd>' +
+          '<dt>Deliver to</dt><dd>' + esc(addr || '—') + '</dd>' +
+          '<dt>ID check</dt><dd>' + idPill(o.verification_status, o.verification_manual) + '</dd>' +
+        '</dl>' +
+
+        '<h3>Fulfilment</h3><dl class="kv">' +
+          '<dt>Cleared</dt><dd>' + day(o.dispatched_at) + '</dd>' +
+          '<dt>Posted</dt><dd>' + (o.shipped_at ? day(o.shipped_at) : 'Not yet') + '</dd>' +
+          '<dt>Tracking</dt><dd>' + esc(o.tracking_ref || '—') + '</dd>' +
+          '<dt>Returned</dt><dd>' + (o.returned_at ? day(o.returned_at) : 'No') + '</dd>' +
+        '</dl>' +
+        '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
+          (!o.shipped_at && o.dispatched_at
+            ? '<button class="btn primary sm" data-ship="' + esc(o.id) + '">Mark posted</button>' : '') +
+          (o.shipped_at && !o.returned_at
+            ? '<button class="btn sm" data-return="' + esc(o.id) + '">Mark returned</button>' : '') +
+        '</div>' +
+
+        '<h3>Payments · ' + money(total, 'AUD') + ' to date</h3>' +
+        (mine.length ? mine.map(function (p) {
+          return '<div class="note">' + money(p.amount_cents, p.currency) + ' · ' + day(p.paid_at) +
+            (p.hosted_url ? ' · <a href="' + esc(p.hosted_url) + '" target="_blank" rel="noopener">invoice</a>' : '') +
+            '</div>';
+        }).join('') : '<div class="note" style="color:var(--ink-faint)">None recorded.</div>') +
+
+        '<h3>Internal notes</h3><div id="dnotes">Loading…</div>' +
+        '<textarea id="dnote" placeholder="Add a note — what happened, what you did, why."></textarea>' +
+        '<div style="margin-top:9px"><button class="btn sm" id="dsave">Save note</button></div>' +
+      '</div>';
+
+    document.body.appendChild(scrim);
+    document.body.appendChild(d);
+    $('dclose').addEventListener('click', closeDrawer);
+
+    loadNotes(o.id);
+    $('dsave').addEventListener('click', function () {
+      var body = $('dnote').value.trim();
+      if (body.length < 2) return;
+      $('dsave').disabled = true;
+      db.rpc('admin_add_note', { p_subscription_id: o.id, p_body: body }).then(function (res) {
+        $('dsave').disabled = false;
+        if (res.error) return drawerMsg('err', res.error.message);
+        $('dnote').value = '';
+        loadNotes(o.id);
+      });
+    });
+  }
+
+  function loadNotes(id) {
+    db.rpc('admin_ops_notes', { p_subscription_id: id }).then(function (res) {
+      var el = $('dnotes');
+      if (!el) return;
+      var rows = res.data || [];
+      el.innerHTML = rows.length ? rows.map(function (n) {
+        return '<div class="note">' + esc(n.body) +
+          '<div class="meta">' + esc(n.author_email) + ' · ' + day(n.created_at) + '</div></div>';
+      }).join('') : '<div class="note" style="color:var(--ink-faint)">No notes yet.</div>';
+    });
+  }
+
+  function drawerMsg(kind, text) {
+    var m = $('dmsg');
+    if (m) m.innerHTML = '<div class="msg ' + kind + '">' + esc(text) + '</div>';
+  }
+
+  /* ================================================= ACTIONS =========== */
+  // One delegated listener for the whole page: the queue and the drawer both
+  // render the same buttons, and re-binding after every re-render is how
+  // dead buttons happen.
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-ship],[data-return],[data-grant],[data-open]') : null;
+    if (!el) return;
+
+    if (el.dataset.open) { openDrawer(el.dataset.open); return; }
+
+    if (el.dataset.ship) {
+      var track = window.prompt(
+        'Tracking number (optional — leave blank if none).\n\n' +
+        'This marks the device as physically posted. It cannot be undone.');
+      if (track === null) return;                 // cancelled
+      el.disabled = true;
+      db.rpc('admin_mark_shipped', { p_subscription_id: el.dataset.ship, p_tracking: track })
+        .then(function (res) {
+          el.disabled = false;
+          if (res.error) { alert(res.error.message); return; }
+          closeDrawer(); reload();
+        });
+      return;
+    }
+
+    if (el.dataset.return) {
+      if (!window.confirm('Mark this device as returned? This cannot be undone.')) return;
+      el.disabled = true;
+      db.rpc('admin_mark_returned', { p_subscription_id: el.dataset.return })
+        .then(function (res) {
+          el.disabled = false;
+          if (res.error) { alert(res.error.message); return; }
+          closeDrawer(); reload();
+        });
+      return;
+    }
+
+    if (el.dataset.grant) {
+      var why = window.prompt(
+        'Approving ' + el.dataset.grant + ' without a passed ID check.\n\n' +
+        'Why? This is recorded against your account permanently.');
+      if (why === null) return;
+      if (why.trim().length < 5) { alert('Give a real reason — at least a few words.'); return; }
+      el.disabled = true;
+      db.rpc('admin_grant_verification', { p_email: el.dataset.grant, p_reason: why.trim() })
+        .then(function (res) {
+          el.disabled = false;
+          if (res.error) { alert(res.error.message); return; }
+          reload();
+        });
+      return;
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeDrawer();
+  });
+})();
+</script>
