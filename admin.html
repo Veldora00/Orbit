@@ -695,7 +695,14 @@
       const action = c.is_verified
         ? ''
         : '<button class="btn-sm" style="border-color:var(--amber); color:var(--amber);"'
-          + ' onclick="grantVerification(\'' + esc(c.email) + '\')">Approve identity</button>';
+          // The email goes in a data attribute, not into an onclick string.
+          // esc() turns ' into &#39;, which the HTML parser turns back into a
+          // real quote BEFORE the JS in an onclick is parsed - so an address
+          // containing an apostrophe would break out of the string and run as
+          // code, in an admin's session, from a value a stranger chose at
+          // signup. A data attribute is never parsed as JS, so there is
+          // nothing to break out of.
+          + ' data-grant="' + esc(c.email) + '">Approve identity</button>';
 
       return '<div class="cust-row">'
         + '<div class="cust-main">'
@@ -730,6 +737,13 @@
     if (error) { alert('Could not approve: ' + error.message); return; }
     loadCustomers();
   }
+
+  // Delegated: the customer rows are re-rendered on every load, so binding
+  // to the buttons themselves would leave dead handlers behind.
+  document.addEventListener('click', function (e) {
+    const b = e.target.closest ? e.target.closest('[data-grant]') : null;
+    if (b) grantVerification(b.dataset.grant);
+  });
 
   document.getElementById('cust-refresh').onclick = loadCustomers;
 
