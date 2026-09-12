@@ -1,0 +1,48 @@
+# Cloudflare Pages response headers.
+#
+# This file is not served to visitors — Pages reads it at deploy time and
+# attaches these headers to every response. It must sit in the repo root,
+# alongside index.html, and the two-space indent under each path is required.
+#
+# None of this replaces the real defence: the database is guarded by RLS and
+# the admin RPCs check is_admin() server-side. These headers reduce the blast
+# radius of a mistake in the pages themselves.
+
+/*
+  # Nobody may put this site in a frame. Stops an attacker overlaying an
+  # invisible copy of the admin page and stealing clicks from a signed-in
+  # operator.
+  X-Frame-Options: DENY
+
+  # Serve files as the type they claim to be. Stops a browser deciding an
+  # uploaded image is really JavaScript.
+  X-Content-Type-Options: nosniff
+
+  # Don't leak full URLs (which may carry a session or verification id) to
+  # other sites in the Referer header.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Hardware the site never uses.
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), usb=()
+
+  # Always HTTPS for a year, subdomains included.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+  # Where the page is allowed to load code and talk to.
+  #
+  # 'unsafe-inline' is present because every page carries its own inline
+  # <script> and <style>; removing it means moving all of that into separate
+  # files first. Even with it, this blocks the part that matters most:
+  # script from any host other than jsDelivr, and network calls to anywhere
+  # other than our own Supabase project. An injected <script src="evil.com">
+  # or a quiet fetch of customer data to someone else's server is refused.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://asajwviusixmnoolawnb.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+# The operator pages should never be indexed or cached by an intermediary.
+/admin.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store
+
+/ops.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-store
