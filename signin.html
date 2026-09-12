@@ -194,6 +194,24 @@
     return false;
   }
 
+  /* Where the confirmation link should drop someone once they click it.
+   *
+   * Left unset, Supabase builds that link from the project's Site URL — one
+   * value in a dashboard, miles from this code, and wrong by default
+   * (localhost:3000). Every new customer then gets a confirmation email
+   * pointing at a machine that isn't theirs. Pinning it to the current origin
+   * means the link is correct wherever the site is served from: production,
+   * a Pages preview build, or a file opened locally.
+   *
+   * Supabase still checks this against the project's Redirect URLs allow-list
+   * and silently falls back to Site URL if it isn't listed — so the dashboard
+   * entry is not optional, this just stops it being the only line of defence.
+   */
+  function confirmRedirect(){
+    var dir = location.origin + location.pathname.replace(/[^/]*$/, '');
+    return dir + (nextTarget || 'account.html');
+  }
+
   async function doSignUp(e){
     e.preventDefault();
     show('su-error', ''); show('su-ok', '');
@@ -207,7 +225,10 @@
     var { data, error } = await Talaks.client.auth.signUp({
       email: email,
       password: password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: confirmRedirect(),
+      },
     });
 
     if (error) {
@@ -219,7 +240,8 @@
     if (!data.session) {
       // Email confirmation is switched on for this project.
       btn.disabled = false; btn.textContent = 'Create account';
-      show('su-ok', 'Check ' + email + ' for a confirmation link, then sign in.');
+      show('su-ok', 'Check ' + email + ' for a confirmation link. Opening it signs you in — '
+        + 'no need to come back here. Look in spam if it hasn’t arrived in a minute.');
       return false;
     }
 
