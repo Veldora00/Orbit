@@ -9,6 +9,14 @@
 # radius of a mistake in the pages themselves.
 
 /*
+  # PRE-LAUNCH ONLY — DELETE THIS LINE BEFORE YOU OPEN TO CUSTOMERS.
+  #
+  # Keeps the whole site out of Google, Bing and every other crawler while
+  # it is still being built. This is not access control — anyone with the
+  # URL still gets in — it only stops the site being *found*. Real gating
+  # is Cloudflare Access, set up in the dashboard.
+  X-Robots-Tag: noindex, nofollow
+
   # Nobody may put this site in a frame. Stops an attacker overlaying an
   # invisible copy of the admin page and stealing clicks from a signed-in
   # operator.
