@@ -127,6 +127,21 @@
        border-radius:999px;background:var(--card);color:var(--ink);min-width:0}
   .tools input{flex:1;min-width:170px}
 
+  /* Inline post form. A browser prompt() is the wrong control here: it can't
+     be styled, can't show a hint, and on a phone it's a grey box with no
+     context. Posting a device is the single most frequent action on this
+     page, so it gets a real field. */
+  .ship{display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+        background:var(--wash);border:1px solid var(--line);border-radius:12px;
+        padding:9px 11px}
+  .ship input{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;
+        border:1px solid var(--line-strong);background:var(--card);color:var(--ink);
+        width:190px;max-width:48vw}
+  .ship .hint{font-size:12px;color:var(--ink-faint);flex-basis:100%}
+
+  tbody tr.attention td{background:#FDF4F1}
+  tbody tr.attention:hover td{background:#FBEAE4}
+
   /* ---- detail drawer ---- */
   .scrim{position:fixed;inset:0;background:rgba(22,26,32,.34);z-index:40}
   .drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);
@@ -225,7 +240,7 @@
     <div class="block scroll"><table>
       <thead><tr>
         <th>Customer</th><th>Device</th><th>Term</th><th class="num">Monthly</th>
-        <th>Status</th><th>ID</th><th>Shipped</th><th>Term ends</th>
+        <th>Status</th><th>ID</th><th>Posted</th><th>Next charge</th><th>Term ends</th>
       </tr></thead>
       <tbody id="o-rows"></tbody>
     </table></div>
@@ -453,7 +468,11 @@
   function renderOrders() {
     var rows = filteredOrders();
     $('o-rows').innerHTML = rows.length ? rows.map(function (o) {
-      return '<tr class="click" data-open="' + esc(o.id) + '">' +
+      // Tint anything that needs a human: a failed payment, or a device that
+      // has been paid for and not posted. Reading a status column row by row
+      // is how you miss one.
+      var flag = (o.status === 'past_due') || (o.dispatched_at && !o.shipped_at);
+      return '<tr class="click' + (flag ? ' attention' : '') + '" data-open="' + esc(o.id) + '">' +
         '<td><strong>' + esc(o.full_name || '—') + '</strong><br>' +
           '<span style="color:var(--ink-dim);font-size:12.5px">' + esc(o.email) + '</span></td>' +
         '<td>' + esc(o.device_name || o.device_id || '—') + '<br>' +
@@ -463,9 +482,14 @@
         '<td class="num">' + money(o.monthly_amount_cents, 'AUD') + '</td>' +
         '<td>' + statusPill(o.status) + '</td>' +
         '<td>' + idPill(o.verification_status, o.verification_manual) + '</td>' +
-        '<td>' + (o.shipped_at ? day(o.shipped_at) : '<span class="pill warn">Not sent</span>') + '</td>' +
+        '<td>' + (o.shipped_at
+            ? day(o.shipped_at) + (o.tracking_ref
+                ? '<br><span style="color:var(--ink-dim);font-size:12px">' + esc(o.tracking_ref) + '</span>' : '')
+            : '<span class="pill warn">Not sent</span>') + '</td>' +
+        '<td>' + (o.status === 'past_due'
+            ? '<span class="pill bad">Missed</span>' : day(o.current_period_end)) + '</td>' +
         '<td>' + day(o.cancel_at) + '</td></tr>';
-    }).join('') : '<tr><td colspan="8" class="empty">No orders match.</td></tr>';
+    }).join('') : '<tr><td colspan="9" class="empty">No orders match.</td></tr>';
   }
   $('o-search').addEventListener('input', renderOrders);
   $('o-status').addEventListener('change', renderOrders);
@@ -579,7 +603,7 @@
           '<dt>Tracking</dt><dd>' + esc(o.tracking_ref || '—') + '</dd>' +
           '<dt>Returned</dt><dd>' + (o.returned_at ? day(o.returned_at) : 'No') + '</dd>' +
         '</dl>' +
-        '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
+        '<div class="act" style="margin-top:12px">' +
           (!o.shipped_at && o.dispatched_at
             ? '<button class="btn primary sm" data-ship="' + esc(o.id) + '">Mark posted</button>' : '') +
           (o.shipped_at && !o.returned_at
@@ -638,23 +662,60 @@
   // render the same buttons, and re-binding after every re-render is how
   // dead buttons happen.
   document.addEventListener('click', function (e) {
-    var el = e.target.closest ? e.target.closest('[data-ship],[data-return],[data-grant],[data-open]') : null;
+    var el = e.target.closest ? e.target.closest(
+      '[data-ship],[data-ship-go],[data-ship-cancel],[data-return],[data-grant],[data-open]') : null;
     if (!el) return;
 
     if (el.dataset.open) { openDrawer(el.dataset.open); return; }
 
+    // Step one: swap the button for a real field, in place. Nothing is
+    // written yet — this is still reversible.
     if (el.dataset.ship) {
-      var track = window.prompt(
-        'Tracking number (optional — leave blank if none).\n\n' +
-        'This marks the device as physically posted. It cannot be undone.');
-      if (track === null) return;                 // cancelled
-      el.disabled = true;
-      db.rpc('admin_mark_shipped', { p_subscription_id: el.dataset.ship, p_tracking: track })
-        .then(function (res) {
-          el.disabled = false;
-          if (res.error) { alert(res.error.message); return; }
-          closeDrawer(); reload();
+      var host = el.closest('.act') || el.parentElement;
+      if (!host || host.querySelector('.ship')) return;
+      host.dataset.restore = host.innerHTML;
+      host.innerHTML =
+        '<div class="ship">' +
+          '<input type="text" placeholder="Tracking number" data-track ' +
+            'autocomplete="off" spellcheck="false">' +
+          '<button class="btn primary sm" data-ship-go="' + esc(el.dataset.ship) + '">Confirm posted</button>' +
+          '<button class="btn sm" data-ship-cancel>Cancel</button>' +
+          '<span class="hint">Leave blank if there is no tracking. This can’t be undone.</span>' +
+        '</div>';
+      var f = host.querySelector('[data-track]');
+      if (f) {
+        f.focus();
+        f.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter') host.querySelector('[data-ship-go]').click();
+          if (ev.key === 'Escape') host.querySelector('[data-ship-cancel]').click();
         });
+      }
+      return;
+    }
+
+    if (el.hasAttribute('data-ship-cancel')) {
+      var h = el.closest('.act') || el.parentElement.parentElement;
+      if (h && h.dataset.restore) h.innerHTML = h.dataset.restore;
+      return;
+    }
+
+    // Step two: write it.
+    if (el.dataset.shipGo) {
+      var box = el.closest('.ship');
+      var input = box ? box.querySelector('[data-track]') : null;
+      var tracking = input ? input.value.trim() : '';
+      el.disabled = true; el.textContent = 'Saving…';
+      db.rpc('admin_mark_shipped', {
+        p_subscription_id: el.dataset.shipGo,
+        p_tracking: tracking,
+      }).then(function (res) {
+        if (res.error) {
+          el.disabled = false; el.textContent = 'Confirm posted';
+          alert(res.error.message);
+          return;
+        }
+        closeDrawer(); reload();
+      });
       return;
     }
 
